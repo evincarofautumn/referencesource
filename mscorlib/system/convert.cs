@@ -2181,7 +2181,8 @@ namespace System {
             stringLength = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
             string returnString = string.FastAllocateString(stringLength);
-            fixed (char* outChars = returnString){
+            fixed (byte* outChars_ = &returnString.start_byte){
+				char* outChars = (char*)outChars_;
                 fixed (byte* inData = inArray) {
                     int j = ConvertToBase64Array(outChars,inData,offset,length, insertLineBreaks);
                     BCLDebug.Assert(returnString.Length == j, "returnString.Length == j");
@@ -2352,8 +2353,8 @@ namespace System {
             Contract.EndContractBlock();
 
             unsafe {
-                fixed (Char* sPtr = s) {
-
+                fixed (byte* sPtr_ = &s.start_byte) {
+					char* sPtr = (char*)sPtr_;
                     return FromBase64CharPtr(sPtr, s.Length);
                 }
             }

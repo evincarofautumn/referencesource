@@ -669,7 +669,8 @@ namespace System {
         [TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
 #endif
         private unsafe static char * MatchChars(char* p, string str) {
-            fixed (char* stringPointer = str) {
+            fixed (byte* stringPointer_ = &str.start_byte) {
+				char* stringPointer = (char*)stringPointer_;
                 return MatchChars(p, stringPointer);
             }
         }
@@ -1073,8 +1074,9 @@ namespace System {
             }
             Contract.EndContractBlock();
             Contract.Assert(info != null, "");
-            fixed (char* stringPointer = str) {
-                char * p = stringPointer;
+            fixed (byte* stringPointer_ = &str.start_byte) {
+                char* stringPointer = (char*)stringPointer_;
+                char* p = stringPointer;
                 if (!ParseNumber(ref p, options, ref number, null, info , parseDecimal) 
                     || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer)))) {
                     throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
@@ -1256,8 +1258,9 @@ namespace System {
             }
             Contract.Assert(numfmt != null, "");
 
-            fixed (char* stringPointer = str) {
-                char * p = stringPointer;
+            fixed (byte* stringPointer_ = &str.start_byte) {
+                char* stringPointer = (char*)stringPointer_;
+                char* p = stringPointer;
                 if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal) 
                     || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer)))) {
                     return false;

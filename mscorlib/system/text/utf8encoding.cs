@@ -158,8 +158,8 @@ namespace System.Text
                 throw new ArgumentNullException("s");
             Contract.EndContractBlock();
 
-            fixed (char* pChars = chars)
-                return GetByteCount(pChars, chars.Length, null);
+            fixed (byte* pChars_ = &chars.start_byte)
+                return GetByteCount((char*)pChars_, chars.Length, null);
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -217,9 +217,9 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
-            fixed (char* pChars = s)
+            fixed (byte* pChars_ = &s.start_byte)
                 fixed ( byte* pBytes = bytes)
-                    return GetBytes(pChars + charIndex, charCount,
+                    return GetBytes((char*)pChars_ + charIndex, charCount,
                                     pBytes + byteIndex, byteCount, null);
         }
 
