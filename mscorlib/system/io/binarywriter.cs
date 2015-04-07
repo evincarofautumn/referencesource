@@ -372,6 +372,9 @@ namespace System.IO {
                 throw new ArgumentNullException("value");
             Contract.EndContractBlock();
 
+			if (value.IsCompact)
+				throw new NotImplementedException ();
+
             int len = _encoding.GetByteCount(value);
             Write7BitEncodedInt(len);
 

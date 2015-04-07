@@ -94,6 +94,8 @@ namespace System.Text
             if (chars==null)
                 throw new ArgumentNullException("chars");
             Contract.EndContractBlock();
+			if (chars.IsCompact)
+				throw new NotImplementedException ();
 
             fixed (byte* pChars_ = &chars.start_byte) {
 				char* pChars = (char*)pChars_;
@@ -156,6 +158,8 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
+			if (chars.IsCompact)
+				throw new NotImplementedException ();
             fixed (byte* pChars_ = &chars.start_byte) {
 				char* pChars = (char*)pChars_;
                 fixed ( byte* pBytes = bytes)

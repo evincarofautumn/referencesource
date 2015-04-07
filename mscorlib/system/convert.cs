@@ -2352,6 +2352,8 @@ namespace System {
 
             Contract.EndContractBlock();
 
+			if (s.IsCompact)
+				throw new NotImplementedException ();
             unsafe {
                 fixed (byte* sPtr_ = &s.start_byte) {
 					char* sPtr = (char*)sPtr_;

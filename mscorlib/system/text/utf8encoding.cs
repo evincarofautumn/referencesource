@@ -158,6 +158,8 @@ namespace System.Text
                 throw new ArgumentNullException("s");
             Contract.EndContractBlock();
 
+			if (chars.IsCompact)
+				throw new NotImplementedException ();
             fixed (byte* pChars_ = &chars.start_byte)
                 return GetByteCount((char*)pChars_, chars.Length, null);
         }
@@ -217,6 +219,8 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
+			if (s.IsCompact)
+				throw new NotImplementedException ();
             fixed (byte* pChars_ = &s.start_byte)
                 fixed ( byte* pBytes = bytes)
                     return GetBytes((char*)pChars_ + charIndex, charCount,

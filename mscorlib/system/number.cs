@@ -669,6 +669,8 @@ namespace System {
         [TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
 #endif
         private unsafe static char * MatchChars(char* p, string str) {
+			if (str.IsCompact)
+				throw new NotImplementedException ();
             fixed (byte* stringPointer_ = &str.start_byte) {
 				char* stringPointer = (char*)stringPointer_;
                 return MatchChars(p, stringPointer);
@@ -1072,6 +1074,8 @@ namespace System {
             if (str == null) {
                 throw new ArgumentNullException("String");
             }
+			if (str.IsCompact)
+				throw new NotImplementedException ();
             Contract.EndContractBlock();
             Contract.Assert(info != null, "");
             fixed (byte* stringPointer_ = &str.start_byte) {
@@ -1258,6 +1262,8 @@ namespace System {
             }
             Contract.Assert(numfmt != null, "");
 
+			if (str.IsCompact)
+				throw new NotImplementedException ();
             fixed (byte* stringPointer_ = &str.start_byte) {
                 char* stringPointer = (char*)stringPointer_;
                 char* p = stringPointer;
