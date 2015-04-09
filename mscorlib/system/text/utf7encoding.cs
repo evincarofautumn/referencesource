@@ -201,11 +201,9 @@ namespace System.Text
                 throw new ArgumentNullException("s");
             Contract.EndContractBlock();
 
-			if (s.IsCompact)
-				throw new NotImplementedException ();
-            fixed (byte* pChars_ = &s.start_byte)
-                return GetByteCount((char*)pChars_, s.Length, null);
-        }
+            fixed (char* pChars = s.ToCharArray ())
+                return GetByteCount(pChars, s.Length, null); 
+       }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
         // So if you fix this, fix the others.  Currently those include:
@@ -265,9 +263,9 @@ namespace System.Text
 
 			if (s.IsCompact)
 				throw new NotImplementedException ();
-            fixed (byte* pChars_ = &s.start_byte)
+            fixed (char* pChars = s.ToCharArray ())
                 fixed ( byte* pBytes = bytes)
-                    return GetBytes((char*)pChars_ + charIndex, charCount,
+                    return GetBytes(pChars + charIndex, charCount,
                                     pBytes + byteIndex, byteCount, null);
         }
 

@@ -2352,13 +2352,9 @@ namespace System {
 
             Contract.EndContractBlock();
 
-			if (s.IsCompact)
-				throw new NotImplementedException ();
             unsafe {
-                fixed (byte* sPtr_ = &s.start_byte) {
-					char* sPtr = (char*)sPtr_;
-                    return FromBase64CharPtr(sPtr, s.Length);
-                }
+				fixed (char* sPtr = s.ToCharArray ())
+					return FromBase64CharPtr(sPtr, s.Length);
             }
         }
 

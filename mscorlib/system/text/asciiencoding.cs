@@ -94,13 +94,9 @@ namespace System.Text
             if (chars==null)
                 throw new ArgumentNullException("chars");
             Contract.EndContractBlock();
-			if (chars.IsCompact)
-				throw new NotImplementedException ();
 
-            fixed (byte* pChars_ = &chars.start_byte) {
-				char* pChars = (char*)pChars_;
+            fixed (char* pChars = chars.ToCharArray ())
                 return GetByteCount(pChars, chars.Length, null);
-			}
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -158,9 +154,7 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
-			if (chars.IsCompact)
-				throw new NotImplementedException ();
-            fixed (byte* pChars_ = &chars.start_byte) {
+            fixed (byte* pChars_ = chars.ToCharArray ()) {
 				char* pChars = (char*)pChars_;
                 fixed ( byte* pBytes = bytes)
                     return GetBytes(pChars + charIndex, charCount,

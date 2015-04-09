@@ -669,12 +669,8 @@ namespace System {
         [TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
 #endif
         private unsafe static char * MatchChars(char* p, string str) {
-			if (str.IsCompact)
-				throw new NotImplementedException ();
-            fixed (byte* stringPointer_ = &str.start_byte) {
-				char* stringPointer = (char*)stringPointer_;
-                return MatchChars(p, stringPointer);
-            }
+			fixed (char* stringPointer = str.ToCharArray ())
+				return MatchChars(p, stringPointer);
         }
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe static char * MatchChars(char* p, char* str) {
@@ -1074,18 +1070,14 @@ namespace System {
             if (str == null) {
                 throw new ArgumentNullException("String");
             }
-			if (str.IsCompact)
-				throw new NotImplementedException ();
             Contract.EndContractBlock();
             Contract.Assert(info != null, "");
-            fixed (byte* stringPointer_ = &str.start_byte) {
-                char* stringPointer = (char*)stringPointer_;
-                char* p = stringPointer;
-                if (!ParseNumber(ref p, options, ref number, null, info , parseDecimal) 
-                    || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer)))) {
-                    throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
-                }
-            }
+			fixed (char* stringPointer = str.ToCharArray ()) {
+				char* p = stringPointer;
+				if (!ParseNumber(ref p, options, ref number, null, info , parseDecimal) 
+					|| (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
+					throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+			}
         }
         
         private static Boolean TrailingZeros(String s, Int32 index) {
@@ -1262,16 +1254,12 @@ namespace System {
             }
             Contract.Assert(numfmt != null, "");
 
-			if (str.IsCompact)
-				throw new NotImplementedException ();
-            fixed (byte* stringPointer_ = &str.start_byte) {
-                char* stringPointer = (char*)stringPointer_;
-                char* p = stringPointer;
-                if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal) 
-                    || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer)))) {
-                    return false;
-                }
-            }
+			fixed (char* stringPointer = str.ToCharArray ()) {
+				char* p = stringPointer;
+				if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal)
+					|| (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
+					return false;
+			}
 
             return true;
         }
