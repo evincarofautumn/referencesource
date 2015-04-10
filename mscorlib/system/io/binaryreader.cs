@@ -303,8 +303,12 @@ namespace System.IO {
 
                 charsRead = m_decoder.GetChars(m_charBytes, 0, n, m_charBuffer, 0);
 
-                if (currPos == 0 && n == stringLength)
-                    return new String(m_charBuffer, 0, charsRead);
+                if (currPos == 0 && n == stringLength) {
+					String result = new String(m_charBuffer, 0, charsRead);
+					Console.Error.WriteLine("read {0} bytes: \"{1}\"", stringLength, result);
+					Console.Error.Flush();
+                    return result;
+				}
 
                 if (sb == null)
                     sb = StringBuilderCache.Acquire(stringLength); // Actual string length in chars may be smaller.
