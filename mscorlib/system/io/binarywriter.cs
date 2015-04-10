@@ -383,6 +383,8 @@ namespace System.IO {
                 _maxChars = LargeByteBufferSize / _encoding.GetMaxByteCount(1);
             }
 
+			// Console.WriteLine ("Write(String)");
+
             if (len <= LargeByteBufferSize) {
                 //Contract.Assert(len == _encoding.GetBytes(chars, 0, chars.Length, _largeByteBuffer, 0), "encoding's GetByteCount & GetBytes gave different answers!  encoding type: "+_encoding.GetType().Name);
                 _encoding.GetBytes(value, 0, value.Length, _largeByteBuffer, 0);
