@@ -154,8 +154,7 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
-            fixed (byte* pChars_ = chars.ToCharArray ()) {
-				char* pChars = (char*)pChars_;
+            fixed (char* pChars = chars.ToCharArray ()) {
                 fixed ( byte* pBytes = bytes)
                     return GetBytes(pChars + charIndex, charCount,
                                     pBytes + byteIndex, byteCount, null);

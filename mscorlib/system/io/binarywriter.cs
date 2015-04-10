@@ -368,7 +368,7 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe virtual void Write(String value_)
         {
-            if (value==null)
+            if (value_==null)
                 throw new ArgumentNullException("value");
             Contract.EndContractBlock();
 
@@ -402,13 +402,9 @@ namespace System.IO {
                     // Figure out how many chars to process this round.
                     int charCount = (numLeft > _maxChars) ? _maxChars : numLeft;
                     int byteLen;
-					if (value.IsCompact)
-						throw new NotImplementedException ();
-                    fixed(byte* pChars_ = &value.start_byte) {
-						char* pChars = (char*)pChars_;
-                        fixed(byte* pBytes = _largeByteBuffer) {
-                            byteLen = _encoder.GetBytes(pChars + charStart, charCount, pBytes, LargeByteBufferSize, charCount == numLeft);
-                        }
+                    fixed(char* pChars = value)
+                    fixed(byte* pBytes = _largeByteBuffer) {
+                        byteLen = _encoder.GetBytes(pChars + charStart, charCount, pBytes, LargeByteBufferSize, charCount == numLeft);
                     }
 #if _DEBUG
                     totalBytes += byteLen;
