@@ -495,8 +495,7 @@ namespace System.Xml {
         public override unsafe void WriteWhitespace( string ws ) {
             Debug.Assert( ws != null );
             
-            fixed ( byte * pSrc_ = &ws.start_byte ) {
-				char* pSrc = (char*)pSrc_;
+            fixed ( char * pSrc = ws.ToCharArray() ) {
                 char * pSrcEnd = pSrc + ws.Length;
                 if ( inAttributeValue) {
                     WriteAttributeTextBlock( pSrc, pSrcEnd );
@@ -513,8 +512,7 @@ namespace System.Xml {
         public override unsafe void WriteString( string text ) {
             Debug.Assert( text != null );
             
-            fixed ( byte * pSrc_ = &text.start_byte ) {
-				char* pSrc = (char*)pSrc_;
+            fixed ( char * pSrc = text.ToCharArray() ) {
                 char * pSrcEnd = pSrc + text.Length;
                 if ( inAttributeValue) {
                     WriteAttributeTextBlock( pSrc, pSrcEnd );
@@ -578,8 +576,7 @@ namespace System.Xml {
         public override unsafe void WriteRaw( string data ) {
             Debug.Assert( data != null );
 
-            fixed ( byte * pSrcBegin_ = &data.start_byte ) {
-				char* pSrcBegin = (char*)pSrcBegin_;
+            fixed ( char * pSrcBegin = data.ToCharArray() ) {
                 WriteRawWithCharChecking( pSrcBegin, pSrcBegin + data.Length );
             }
 
@@ -872,8 +869,7 @@ namespace System.Xml {
         protected unsafe void RawText( string s ) {
             Debug.Assert( s != null );
 
-            fixed ( byte * pSrcBegin_ = &s.start_byte ) {
-				char* pSrcBegin = (char*)pSrcBegin_;
+            fixed ( char * pSrcBegin = s.ToCharArray() ) {
                 RawText( pSrcBegin, pSrcBegin + s.Length );
             }
         }
@@ -1014,10 +1010,9 @@ namespace System.Xml {
                 return;
             }
               // write text
-            fixed ( byte * pSrcBegin_ = &text.start_byte )
+            fixed ( char * pSrcBegin = text.ToCharArray() )
             
             fixed ( byte * pDstBegin = bufBytes ) {
-				char* pSrcBegin = (char*)pSrcBegin_;
                 char * pSrc = pSrcBegin;
 
                 char * pSrcEnd = pSrcBegin + text.Length;
@@ -1136,10 +1131,9 @@ namespace System.Xml {
 
                       // write text
 
-            fixed ( byte * pSrcBegin_ = &text.start_byte )
+			 fixed ( char * pSrcBegin = text.ToCharArray() )
 
             fixed ( byte * pDstBegin = bufBytes ) {
-				char* pSrcBegin = (char*)pSrcBegin_;
                 char * pSrc = pSrcBegin;
 
                 char * pSrcEnd = pSrcBegin + text.Length;
@@ -1447,8 +1441,7 @@ namespace System.Xml {
             pDst[2] = (byte)'x'; 
             pDst += 3;
             
-            fixed ( byte *pSrc_ = &s.start_byte ) {
-				char* pSrc = (char*)pSrc_;
+            fixed ( char *pSrc = s.ToCharArray() ) {
                 char *pS = pSrc;
                 while ( ( *pDst++ = (byte)*pS++ ) != 0 );
             }

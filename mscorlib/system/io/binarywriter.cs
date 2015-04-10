@@ -402,6 +402,8 @@ namespace System.IO {
                     // Figure out how many chars to process this round.
                     int charCount = (numLeft > _maxChars) ? _maxChars : numLeft;
                     int byteLen;
+					if (value.IsCompact)
+						throw new NotImplementedException ();
                     fixed(byte* pChars_ = &value.start_byte) {
 						char* pChars = (char*)pChars_;
                         fixed(byte* pBytes = _largeByteBuffer) {
