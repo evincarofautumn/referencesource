@@ -349,7 +349,9 @@ namespace System {
             int length = strIn.Length;
             String strOut = FastAllocateString(length);
             /* FIXME: Avoid ToCharArray. */
-            fixed (char * inBuff = strIn.ToCharArray (), outBuff = strOut.ToCharArray ()) {
+            fixed (char* inBuff = strIn.ToCharArray ())
+            fixed (byte* outBuff_ = &strOut.m_firstByte) {
+                char* outBuff = (char*)outBuff_;
 
                 for(int i = 0; i < length; i++) {
                     int c = inBuff[i];
@@ -1317,9 +1319,10 @@ namespace System {
             String result = FastAllocateString(length);
 
             /* FIXME: Avoid ToCharArray. */
-            fixed(char* dest = result.ToCharArray ()) fixed(char* src = this.ToCharArray ()) {
-                    wstrcpy(dest, src + startIndex, length);
-                }
+            fixed (char* src = this.ToCharArray ())
+            fixed (byte* dest_ = &result.m_firstByte) {
+                wstrcpy((char*)dest_, src + startIndex, length);
+            }
 
             return result;
         }
@@ -1435,8 +1438,9 @@ namespace System {
                 return String.Empty;
             
             String s = FastAllocateString(stringLength);
-            fixed(char* pTempChars = s.ToCharArray ())
+            fixed (byte* pTempChars_ = &s.m_firstByte)
             {
+                char* pTempChars = (char*)pTempChars_;
                 int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength, null);
                 Contract.Assert(stringLength == doubleCheck, 
                     "Expected encoding.GetChars to return same length as encoding.GetCharCount");
@@ -1555,8 +1559,9 @@ namespace System {
             Contract.EndContractBlock();
 
             /* FIXME: Avoid ToCharArray. */
-            fixed(char *pDest = dest.ToCharArray ()) fixed (char *pSrc = src.ToCharArray ()) {
-                wstrcpy(pDest + destPos, pSrc, src.Length);
+            fixed (char *pSrc = src.ToCharArray ())
+            fixed (byte *pDest_ = &dest.m_firstByte) {
+                wstrcpy((char*)pDest_ + destPos, pSrc, src.Length);
             }
         }
 
@@ -3103,8 +3108,9 @@ namespace System {
             String result = FastAllocateString(length);
 
             /* FIXME: Avoid ToCharArray. */
-            fixed(char* dest = result.ToCharArray ()) fixed(char* src = str.ToCharArray ()) {
-                wstrcpy(dest, src, length);
+            fixed (char* src = str.ToCharArray ())
+            fixed (byte* dest_ = &result.m_firstByte) {
+                wstrcpy((char*)dest_, src, length);
             }
             return result;
         }
