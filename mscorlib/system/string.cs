@@ -261,8 +261,10 @@ namespace System {
                 return String.Empty;
             }
 
+            /* FIXME: Assumes FastAllocateString returns a UTF-16 string. */
             string jointString = FastAllocateString( jointLength );
-            fixed (char * pointerToJointString = &jointString.m_firstChar) {
+            fixed (byte* pointerToJointString_ = &jointString.m_firstByte) {
+                char* pointerToJointString = (char*)pointerToJointString_;
                 UnSafeCharBuffer charBuffer = new UnSafeCharBuffer( pointerToJointString, jointLength);                
                 
                 // Append the first string first and then append each following string prefixed by the separator.
@@ -285,7 +287,8 @@ namespace System {
             Contract.EndContractBlock();
             int length = Math.Min(strA.Length, strB.Length);
     
-            fixed (char* ap = &strA.m_firstChar) fixed (char* bp = &strB.m_firstChar)
+            /* FIXME: Avoid ToCharArray. */
+            fixed (char* ap = strA.ToCharArray ()) fixed (char* bp = strB.ToCharArray ())
             {
                 char* a = ap;
                 char* b = bp;
@@ -345,7 +348,8 @@ namespace System {
             //
             int length = strIn.Length;
             String strOut = FastAllocateString(length);
-            fixed (char * inBuff = &strIn.m_firstChar, outBuff = &strOut.m_firstChar) {
+            /* FIXME: Avoid ToCharArray. */
+            fixed (char * inBuff = strIn.ToCharArray (), outBuff = strOut.ToCharArray ()) {
 
                 for(int i = 0; i < length; i++) {
                     int c = inBuff[i];
@@ -382,7 +386,8 @@ namespace System {
 
             int length = strA.Length;
 
-            fixed (char* ap = &strA.m_firstChar) fixed (char* bp = &strB.m_firstChar)
+            /* FIXME: Avoid ToCharArray. */
+            fixed (char* ap = strA.ToCharArray ()) fixed (char* bp = strB.ToCharArray ())
             {
                 char* a = ap;
                 char* b = bp;
@@ -436,7 +441,8 @@ namespace System {
             int length = Math.Min(strA.Length, strB.Length);
             int diffOffset = -1;
 
-            fixed (char* ap = &strA.m_firstChar) fixed (char* bp = &strB.m_firstChar)
+            /* FIXME: Avoid ToCharArray. */
+            fixed (char* ap = strA.ToCharArray ()) fixed (char* bp = strB.ToCharArray ())
             {
                 char* a = ap;
                 char* b = bp;
@@ -735,7 +741,8 @@ namespace System {
             // Note: fixed does not like empty arrays
             if (count > 0)
             {
-                fixed (char* src = &this.m_firstChar)
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* src = this.ToCharArray ())
                     fixed (char* dest = destination)
                         wstrcpy(dest + destinationIndex, src + sourceIndex, count);
             }
@@ -749,7 +756,8 @@ namespace System {
             char[] chars = new char[length];
             if (length > 0)
             {
-                fixed (char* src = &this.m_firstChar)
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* src = this.ToCharArray ())
                     fixed (char* dest = chars) {
                         wstrcpy(dest, src, length);
                     }
@@ -772,7 +780,8 @@ namespace System {
             char[] chars = new char[length];
             if(length > 0)
             {
-                fixed (char* src = &this.m_firstChar)
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* src = this.ToCharArray ())
                     fixed (char* dest = chars) {
                         wstrcpy(dest, src + startIndex, length);
                     }
@@ -1184,7 +1193,8 @@ namespace System {
             int foundCount=0;
 
             if (separator == null || separator.Length ==0) {
-                fixed (char* pwzChars = &this.m_firstChar) {
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* pwzChars = this.ToCharArray ()) {
                     //If they passed null or an empty string, look for whitespace.
                     for (int i=0; i < Length && foundCount < sepList.Length; i++) {
                         if (Char.IsWhiteSpace(pwzChars[i])) {
@@ -1197,7 +1207,8 @@ namespace System {
                 int sepListCount = sepList.Length;
                 int sepCount = separator.Length;
                 //If they passed in a string of chars, actually look for those chars.
-                fixed (char* pwzChars = &this.m_firstChar, pSepChars = separator) {
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* pwzChars = this.ToCharArray (), pSepChars = separator) {
                     for (int i=0; i< Length && foundCount < sepListCount; i++) {                        
                         char * pSep = pSepChars;
                         for( int j =0; j < sepCount; j++, pSep++) {
@@ -1227,7 +1238,8 @@ namespace System {
             int sepListCount = sepList.Length;
             int sepCount = separators.Length;
 
-            fixed (char* pwzChars = &this.m_firstChar) {
+            /* FIXME: Avoid ToCharArray. */
+            fixed (char* pwzChars = this.ToCharArray ()) {
                 for (int i=0; i< Length && foundCount < sepListCount; i++) {                        
                     for( int j =0; j < separators.Length; j++) {
                         String separator = separators[j];
@@ -1301,8 +1313,8 @@ namespace System {
             
             String result = FastAllocateString(length);
 
-            fixed(char* dest = &result.m_firstChar)
-                fixed(char* src = &this.m_firstChar) {
+            /* FIXME: Avoid ToCharArray. */
+            fixed(char* dest = result.ToCharArray ()) fixed(char* src = this.ToCharArray ()) {
                     wstrcpy(dest, src + startIndex, length);
                 }
 
@@ -1420,7 +1432,7 @@ namespace System {
                 return String.Empty;
             
             String s = FastAllocateString(stringLength);
-            fixed(char* pTempChars = &s.m_firstChar)
+            fixed(char* pTempChars = s.ToCharArray ())
             {
                 int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength, null);
                 Contract.Assert(stringLength == doubleCheck, 
@@ -1443,7 +1455,8 @@ namespace System {
             uint flgs = (fBestFit ? 0 : WC_NO_BEST_FIT_CHARS);
             uint DefaultCharUsed = 0;
 
-            fixed (char* pwzChar = &this.m_firstChar)
+            /* FIXME: Avoid ToCharArray. */
+            fixed (char* pwzChar = ToCharArray ())
             {
                 nb = Win32Native.WideCharToMultiByte(
                     CP_ACP,
@@ -1538,10 +1551,10 @@ namespace System {
             }
             Contract.EndContractBlock();
 
-            fixed(char *pDest = &dest.m_firstChar)
-                fixed (char *pSrc = &src.m_firstChar) {
-                    wstrcpy(pDest + destPos, pSrc, src.Length);
-                }
+            /* FIXME: Avoid ToCharArray. */
+            fixed(char *pDest = dest.ToCharArray ()) fixed (char *pSrc = src.ToCharArray ()) {
+                wstrcpy(pDest + destPos, pSrc, src.Length);
+            }
         }
 
         // Creates a new string from the characters in a subarray.  The new string will
@@ -2915,14 +2928,11 @@ namespace System {
             {
                 fixed (char* srcThis = &m_firstChar)
                 {
-                    fixed (char* srcInsert = &value.m_firstChar)
-                    {
-                        fixed (char* dst = &result.m_firstChar)
-                        {
-                            wstrcpy(dst, srcThis, startIndex);
-                            wstrcpy(dst + startIndex, srcInsert, insertLength);
-                            wstrcpy(dst + startIndex + insertLength, srcThis + startIndex, oldLength - startIndex);
-                        }
+                    /* FIXME: Avoid ToCharArray. */
+                    fixed (char* srcInsert = value.ToCharArray ()) fixed (char* dst = result.ToCharArray ()) {
+                        wstrcpy(dst, srcThis, startIndex);
+                        wstrcpy(dst + startIndex, srcInsert, insertLength);
+                        wstrcpy(dst + startIndex + insertLength, srcThis + startIndex, oldLength - startIndex);
                     }
                 }
             }
@@ -3008,7 +3018,8 @@ namespace System {
             {
                 fixed (char* src = &m_firstChar)
                 {
-                    fixed (char* dst = &result.m_firstChar)
+                    /* FIXME: Avoid ToCharArray. */
+                    fixed (char* dst = result.ToCharArray ())
                     {
                         wstrcpy(dst, src, startIndex);
                         wstrcpy(dst + startIndex, src + startIndex + count, newLength - startIndex);
@@ -3094,11 +3105,11 @@ namespace System {
 
             String result = FastAllocateString(length);
 
-            fixed(char* dest = &result.m_firstChar)
-                fixed(char* src = &str.m_firstChar) {
-                     wstrcpy(dest, src, length);
-                }
-             return result;
+            /* FIXME: Avoid ToCharArray. */
+            fixed(char* dest = result.ToCharArray ()) fixed(char* src = str.ToCharArray ()) {
+                wstrcpy(dest, src, length);
+            }
+            return result;
         }
 
         public static String Concat(Object arg0) {
@@ -3597,7 +3608,8 @@ namespace System {
         {
             if (len == 0)
                 return;
-            fixed(char* charPtr = &src.m_firstChar) {
+            /* FIXME: Avoid ToCharArray. */
+            fixed(char* charPtr = src.ToCharArray ()) {
                 byte* srcPtr = (byte*) charPtr;
                 byte* dstPtr = (byte*) dest;
                 Buffer.Memcpy(dstPtr, srcPtr, len);
