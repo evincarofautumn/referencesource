@@ -60,7 +60,7 @@ namespace System {
         #if !FEATURE_CORECLR
         [System.Runtime.ForceTokenStabilization]
         #endif //!FEATURE_CORECLR
-        [NonSerialized]internal char m_firstByte;
+        [NonSerialized]internal byte m_firstByte;
 
         //private static readonly char FmtMsgMarkerChar='%';
         //private static readonly char FmtMsgFmtCodeChar='!';
