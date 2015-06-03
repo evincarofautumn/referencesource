@@ -199,7 +199,16 @@ namespace System {
         private const int alignConst        = 3;
 #endif
 
-        internal char FirstChar { get { return m_firstChar; } }
+        internal char FirstChar {
+            get {
+                if (IsCompact)
+                    return (char)m_firstByte;
+                unsafe {
+                    fixed (byte* p = &m_firstByte)
+                        return *(char*)p;
+                }
+            }
+        }
 
         // Joins an array of strings together as one string with a separator between each original string.
         //
