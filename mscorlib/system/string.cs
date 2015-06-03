@@ -2925,14 +2925,14 @@ namespace System {
             String result = FastAllocateString(newLength);
             unsafe
             {
-                fixed (char* srcThis = &m_firstChar)
-                {
-                    /* FIXME: Avoid ToCharArray. */
-                    fixed (char* srcInsert = value.ToCharArray ()) fixed (char* dst = result.ToCharArray ()) {
-                        wstrcpy(dst, srcThis, startIndex);
-                        wstrcpy(dst + startIndex, srcInsert, insertLength);
-                        wstrcpy(dst + startIndex + insertLength, srcThis + startIndex, oldLength - startIndex);
-                    }
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* srcThis = ToCharArray ())
+                fixed (char* srcInsert = value.ToCharArray ())
+                fixed (byte* dst_ = &result.m_firstByte) {
+                    char* dst = (char*)dst_;
+                    wstrcpy(dst, srcThis, startIndex);
+                    wstrcpy(dst + startIndex, srcInsert, insertLength);
+                    wstrcpy(dst + startIndex + insertLength, srcThis + startIndex, oldLength - startIndex);
                 }
             }
             return result;
