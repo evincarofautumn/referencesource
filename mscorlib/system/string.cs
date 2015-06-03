@@ -3015,14 +3015,12 @@ namespace System {
             String result = FastAllocateString(newLength);
             unsafe
             {
-                fixed (char* src = &m_firstChar)
-                {
-                    /* FIXME: Avoid ToCharArray. */
-                    fixed (char* dst = result.ToCharArray ())
-                    {
-                        wstrcpy(dst, src, startIndex);
-                        wstrcpy(dst + startIndex, src + startIndex + count, newLength - startIndex);
-                    }
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* src = ToCharArray ())
+                fixed (byte* dst_ = &result.m_firstByte) {
+                    char* dst = (char*)dst_;
+                    wstrcpy(dst, src, startIndex);
+                    wstrcpy(dst + startIndex, src + startIndex + count, newLength - startIndex);
                 }
             }
             return result;
