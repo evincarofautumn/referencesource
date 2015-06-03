@@ -761,11 +761,16 @@ namespace System {
             char[] chars = new char[length];
             if (length > 0)
             {
-                /* FIXME: Avoid ToCharArray. */
-                fixed (char* src = this.ToCharArray ())
+                fixed (byte* srcByte = &m_firstByte) {
                     fixed (char* dest = chars) {
-                        wstrcpy(dest, src, length);
+                        if (IsCompact) {
+                            for (int i = 0; i < length; ++i)
+                                dest [i] = (char)srcByte [i];
+                        } else {
+                            wstrcpy(dest, (char*)srcByte, length);
+                        }
                     }
+                }
             }
             return chars;
         }
@@ -785,11 +790,16 @@ namespace System {
             char[] chars = new char[length];
             if(length > 0)
             {
-                /* FIXME: Avoid ToCharArray. */
-                fixed (char* src = this.ToCharArray ())
+                fixed (byte* srcByte = &m_firstByte) {
                     fixed (char* dest = chars) {
-                        wstrcpy(dest, src + startIndex, length);
+                        if (IsCompact) {
+                            for (int i = 0; i < length; ++i)
+                                dest [i] = (char)srcByte [startIndex + i];
+                        } else {
+                            wstrcpy(dest, (char*)srcByte + startIndex, length);
+                        }
                     }
+                }
             }
             return chars;
         }
