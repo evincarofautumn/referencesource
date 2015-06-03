@@ -55,12 +55,12 @@ namespace System {
         //NOTE NOTE NOTE NOTE
         //These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
         //
-        [NonSerialized]private int  m_stringLength;
+        [NonSerialized]private int  m_taggedStringLength;
 
         #if !FEATURE_CORECLR
         [System.Runtime.ForceTokenStabilization]
         #endif //!FEATURE_CORECLR
-        [NonSerialized]private char m_firstChar;
+        [NonSerialized]private char m_firstByte;
 
         //private static readonly char FmtMsgMarkerChar='%';
         //private static readonly char FmtMsgFmtCodeChar='!';
