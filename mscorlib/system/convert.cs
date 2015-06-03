@@ -2181,7 +2181,7 @@ namespace System {
             stringLength = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
             string returnString = string.FastAllocateString(stringLength);
-            fixed (byte* outChars_ = &returnString.start_byte){
+            fixed (byte* outChars_ = &returnString.m_firstByte){
 				char* outChars = (char*)outChars_;
                 fixed (byte* inData = inArray) {
                     int j = ConvertToBase64Array(outChars,inData,offset,length, insertLineBreaks);
