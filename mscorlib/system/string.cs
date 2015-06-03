@@ -704,10 +704,13 @@ namespace System {
 #if MONO
         public unsafe char this[int index] {
             get {
-                if (index < 0 || index >= m_stringLength)
+                if (index < 0 || index >= Length)
                     throw new IndexOutOfRangeException ();
-                fixed (char* c = &m_firstChar)
-                    return c[index];
+                fixed (byte* p = &m_firstByte) {
+                    if (IsCompact)
+                        return (char)*p;
+                    return *(char*)p;
+                }
             }
         }
 #else
