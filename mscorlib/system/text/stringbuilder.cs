@@ -158,7 +158,8 @@ namespace System.Text {
             m_ChunkLength = length;
 
             unsafe {
-                fixed (char* sourcePtr = value)
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* sourcePtr = value.ToCharArray ())
                     ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
             }
         }
@@ -670,7 +671,8 @@ namespace System.Text {
                     else
                     {
                         unsafe {
-                            fixed (char* valuePtr = value)
+                            /* FIXME: Avoid ToCharArray. */
+                            fixed (char* valuePtr = value.ToCharArray ())
                             fixed (char* destPtr = &chunkChars[chunkLength])
                                 string.wstrcpy(destPtr, valuePtr, valueLen);
                         }
@@ -692,7 +694,8 @@ namespace System.Text {
 #endif
         private void AppendHelper(string value) {
             unsafe {
-                fixed (char* valueChars = value)
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* valueChars = value.ToCharArray ())
                     Append(valueChars, value.Length);
             }
         }
@@ -758,7 +761,8 @@ namespace System.Text {
             }
 
             unsafe {
-                fixed (char* valueChars = value)
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* valueChars = value.ToCharArray ())
                     Append(valueChars + startIndex, count);
             }
             return this;
@@ -873,7 +877,8 @@ namespace System.Text {
             int indexInChunk;
             MakeRoom(index, (int) insertingChars, out chunk, out indexInChunk, false);
             unsafe {
-                fixed (char* valuePtr = value) {
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* valuePtr = value.ToCharArray ()) {
                     while (count > 0)
                     {
                         ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
@@ -1076,7 +1081,8 @@ namespace System.Text {
             if (value != null)
             {
                 unsafe {
-                    fixed (char* sourcePtr = value)
+                    /* FIXME: Avoid ToCharArray. */
+                    fixed (char* sourcePtr = value.ToCharArray ())
                         Insert(index, sourcePtr, value.Length);
                 }
             }
@@ -1727,7 +1733,8 @@ namespace System.Text {
                 return;
 
             unsafe {
-                fixed (char* valuePtr = value)
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* valuePtr = value.ToCharArray ())
                 {
                     // calculate the total amount of extra space or space needed for all the replacements.  
                     int delta = (value.Length - removeCount) * replacementsCount;
