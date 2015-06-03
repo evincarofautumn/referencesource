@@ -1853,10 +1853,8 @@ namespace System {
 
                 case StringComparison.Ordinal:
                     // Most common case: first character is different.
-                    if ((strA.m_firstChar - strB.m_firstChar) != 0)
-                    {
-                        return strA.m_firstChar - strB.m_firstChar;
-                    }
+                    if ((strA [0] - strB [0]) != 0)
+                        return strA [0] - strB [0];
 
                     return CompareOrdinalHelper(strA, strB);
 
