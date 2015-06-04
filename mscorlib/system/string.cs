@@ -710,8 +710,8 @@ namespace System {
                     throw new IndexOutOfRangeException ();
                 fixed (byte* p = &m_firstByte) {
                     if (IsCompact)
-                        return (char)*p;
-                    return *(char*)p;
+                        return (char)*(p + index);
+                    return *((char*)p + index);
                 }
             }
         }
