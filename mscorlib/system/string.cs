@@ -857,7 +857,8 @@ namespace System {
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
 
             unsafe {
-                fixed (char *src = this) {
+				/* FIXME: Avoid ToCharArray. */
+                fixed (char *src = this.ToCharArray()) {
                     Contract.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
 
@@ -914,7 +915,8 @@ namespace System {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal int GetLegacyNonRandomizedHashCode() {
             unsafe {
-                fixed (char *src = this) {
+				/* FIXME: Avoid ToCharArray. */
+                fixed (char *src = this.ToCharArray()) {
                     Contract.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
 
