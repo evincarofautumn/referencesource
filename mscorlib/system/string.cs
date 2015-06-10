@@ -1560,7 +1560,7 @@ namespace System {
         [System.Security.SecurityCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static String FastAllocateString(int length);
+        internal extern static String FastAllocateString(int length, int encoding);
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe private static void FillStringChecked(String dest, int destPos, String src)
