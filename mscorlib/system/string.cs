@@ -62,6 +62,9 @@ namespace System {
         #endif //!FEATURE_CORECLR
         [NonSerialized]internal byte m_firstByte;
 
+        internal const int ENCODING_UTF16 = 0;
+        internal const int ENCODING_ASCII = 1;
+
         //private static readonly char FmtMsgMarkerChar='%';
         //private static readonly char FmtMsgFmtCodeChar='!';
         //These are defined in Com99/src/vm/COMStringCommon.h and must be kept in [....].
@@ -261,19 +264,43 @@ namespace System {
                 return String.Empty;
             }
 
-            /* FIXME: Assumes FastAllocateString returns a UTF-16 string. */
-            string jointString = FastAllocateString( jointLength );
-            fixed (byte* pointerToJointString_ = &jointString.m_firstByte) {
-                char* pointerToJointString = (char*)pointerToJointString_;
-                UnSafeCharBuffer charBuffer = new UnSafeCharBuffer( pointerToJointString, jointLength);                
-                
-                // Append the first string first and then append each following string prefixed by the separator.
-                charBuffer.AppendString( value[startIndex] );
-                for (int stringToJoinIndex = startIndex + 1; stringToJoinIndex <= endIndex; stringToJoinIndex++) {
-                    charBuffer.AppendString( separator );
-                    charBuffer.AppendString( value[stringToJoinIndex] );
+            bool compact = separator.IsCompact;
+            if (compact) {
+                for (int i = 0; i < value.Length; ++i) {
+                    if (!value[i].IsCompact) {
+                        compact = false;
+                        break;
+                    }
                 }
-                Contract.Assert(*(pointerToJointString + charBuffer.Length) == '\0', "String must be null-terminated!");
+            }
+            string jointString = FastAllocateString(jointLength, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            fixed (byte* pointerToJointStringByte = &jointString.m_firstByte) {
+				if (compact) {
+					byte* dest = pointerToJointStringByte;
+					fixed (byte* src = &value[startIndex].m_firstByte)
+						memcpy(dest, src, value[startIndex].Length);
+					dest += value[startIndex].Length;
+					for (int i = startIndex + 1; i <= endIndex; ++i) {
+						fixed (byte* src = &separator.m_firstByte)
+							memcpy(dest, src, separator.Length);
+						dest += separator.Length;
+						fixed (byte* src = &value[i].m_firstByte)
+							memcpy(dest, src, value[i].Length);
+						dest += value[i].Length;
+					}
+					Contract.Assert(*dest == '\0', "String must be null-terminated!");
+				} else {
+					char* pointerToJointString = (char*)pointerToJointStringByte;
+					UnSafeCharBuffer charBuffer = new UnSafeCharBuffer( pointerToJointString, jointLength);
+                
+					// Append the first string first and then append each following string prefixed by the separator.
+					charBuffer.AppendString( value[startIndex] );
+					for (int stringToJoinIndex = startIndex + 1; stringToJoinIndex <= endIndex; stringToJoinIndex++) {
+						charBuffer.AppendString( separator );
+						charBuffer.AppendString( value[stringToJoinIndex] );
+					}
+					Contract.Assert(*(pointerToJointString + charBuffer.Length) == '\0', "String must be null-terminated!");
+				}
             }
 
             return jointString;
@@ -347,23 +374,27 @@ namespace System {
             // less than 0x80.
             //
             int length = strIn.Length;
-            String strOut = FastAllocateString(length);
-            /* FIXME: Avoid ToCharArray. */
-            fixed (char* inBuff = strIn.ToCharArray ())
-            fixed (byte* outBuff_ = &strOut.m_firstByte) {
-                char* outBuff = (char*)outBuff_;
-
-                for(int i = 0; i < length; i++) {
-                    int c = inBuff[i];
-                    Contract.Assert(c <= 0x7F, "string has to be ASCII");
-
-                    // uppercase - notice that we need just one compare
-                    if ((uint)(c - 'a') <= (uint)('z' - 'a')) c -= 0x20;
-
-                    outBuff[i] = (char)c;
+            String strOut = FastAllocateString(length, ENCODING_ASCII);
+            fixed (byte* inByte = &strIn.m_firstByte)
+            fixed (byte* outByte = &strOut.m_firstByte) {
+                if (strIn.IsCompact) {
+                    for (int i = 0; i < length; ++i) {
+                        int c = (char)inByte[i];
+                        Contract.Assert(c <= 0x7F, "string has to be ASCII");
+                        // uppercase - notice that we need just one compare
+                        if ((uint)(c - 'a') <= (uint)('z' - 'a')) c -= 0x20;
+                        outByte[i] = (byte)c;
+                    }
+                } else {
+                    for(int i = 0; i < length; i++) {
+                        int c = ((char*)inByte)[i];
+                        Contract.Assert(c <= 0x7F, "string has to be ASCII");
+                        // uppercase - notice that we need just one compare
+                        if ((uint)(c - 'a') <= (uint)('z' - 'a')) c -= 0x20;
+                        outByte[i] = (byte)c;
+                    }
                 }
-
-                Contract.Assert(outBuff[length]=='\0', "outBuff[length]=='\0'");
+                Contract.Assert(outByte[length]=='\0', "outByte[length]=='\0'");
             }
             return strOut;
         }
@@ -1329,18 +1360,16 @@ namespace System {
         unsafe string InternalSubString(int startIndex, int length) {
             Contract.Assert( startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
             Contract.Assert( length >= 0 && startIndex <= this.Length - length, "length is out of range!");            
-            
-            String result = FastAllocateString(length);
-
-            /* FIXME: Avoid ToCharArray. */
-            fixed (char* src = this.ToCharArray ())
-            fixed (byte* dest_ = &result.m_firstByte) {
-                wstrcpy((char*)dest_, src + startIndex, length);
-            }
-
+            String result = FastAllocateString(length, IsCompact ? ENCODING_ASCII : ENCODING_UTF16);
+            fixed (byte* destByte = &result.m_firstByte)
+			fixed (byte* srcByte = &this.m_firstByte) {
+				if (IsCompact)
+					memcpy (destByte, srcByte + startIndex, length);
+				else
+					CharCopy ((char*)destByte, (char*)srcByte + startIndex, length);
+			}
             return result;
         }
-    
     
         // Removes a string of characters from the ends of this string.
         [Pure]
@@ -1563,7 +1592,7 @@ namespace System {
         internal extern static String FastAllocateString(int length, int encoding);
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        unsafe private static void FillStringChecked(String dest, int destPos, String src)
+        unsafe private static void FillNoncompactStringChecked(String dest, int destPos, String src)
         {
             Contract.Requires(dest != null);
             Contract.Requires(src != null);
@@ -1572,10 +1601,36 @@ namespace System {
             }
             Contract.EndContractBlock();
 
-            /* FIXME: Avoid ToCharArray. */
-            fixed (char *pSrc = src.ToCharArray ())
-            fixed (byte *pDest_ = &dest.m_firstByte) {
-                wstrcpy((char*)pDest_ + destPos, pSrc, src.Length);
+            fixed (byte *pSrcByte = &src.m_firstByte)
+            fixed (byte *pDestByte = &dest.m_firstByte) {
+                if (src.IsCompact) {
+                    for (int i = 0; i < src.Length; ++i)
+                        ((char*)pDestByte)[destPos + i] = (char)pSrcByte[i];
+                } else {
+                    wstrcpy((char*)pDestByte + destPos, (char*)pSrcByte, src.Length);
+                }
+            }
+        }
+
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        unsafe private static void FillCompactStringChecked(String dest, int destPos, String src)
+        {
+            Contract.Requires(dest != null);
+            Contract.Requires(src != null);
+            if (src.Length > dest.Length - destPos) {
+                throw new IndexOutOfRangeException();
+            }
+            Contract.EndContractBlock();
+
+            if (src.IsCompact) {
+                fixed (byte *pSrc_ = &src.m_firstByte)
+                fixed (byte *pDest_ = &dest.m_firstByte) {
+                    /* FIXME: Use memcpy. */
+                    for (int i = 0; i < src.Length; ++i)
+                        pDest_ [destPos + i] = pSrc_ [i];
+                }
+            } else {
+                throw new NotImplementedException("FillCompactStringChecked");
             }
         }
 
@@ -3377,15 +3432,37 @@ namespace System {
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         private static String ConcatArray(String[] values, int totalLength) {
-            String result =  FastAllocateString(totalLength);
+            bool compact = true;
+            for (int i = 0; i < values.Length; ++i) {
+                if (!values[i].IsCompact) {
+                    compact = false;
+                    break;
+                }
+            }
+            String result = FastAllocateString(totalLength, compact ? ENCODING_ASCII : ENCODING_UTF16);
             int currPos=0;
 
-            for (int i=0; i<values.Length; i++) {
-                Contract.Assert((currPos <= totalLength - values[i].Length), 
-                                "[String.ConcatArray](currPos <= totalLength - values[i].Length)");
-
-                FillStringChecked(result, currPos, values[i]);
-                currPos+=values[i].Length;
+            if (compact) {
+                fixed (byte* destByte = &result.m_firstByte) {
+                    byte* dest = destByte;
+                    for (int i = 0; i < values.Length; ++i) {
+                        Contract.Assert(
+                            (currPos <= totalLength - values[i].Length),
+                            "[String.ConcatArray](currPos <= totalLength - values[i].Length)");
+                        /* FIXME: Use memcpy. */
+                        for (int j = 0; j < values[i].Length; ++j)
+                            *dest++ = values[i][j];
+                        currPos+=values[i].Length;
+                    }
+                }
+            } else {
+                for (int i=0; i<values.Length; i++) {
+                    Contract.Assert(
+                        (currPos <= totalLength - values[i].Length),
+                        "[String.ConcatArray](currPos <= totalLength - values[i].Length)");
+                    FillStringChecked(result, currPos, values[i]);
+                    currPos+=values[i].Length;
+                }
             }
 
             return result;

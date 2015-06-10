@@ -2180,7 +2180,7 @@ namespace System {
             //Create the new string.  This is the maximally required length.
             stringLength = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
-            string returnString = string.FastAllocateString(stringLength);
+            string returnString = string.FastAllocateString(stringLength, String.ENCODING_UTF16);
             fixed (byte* outChars_ = &returnString.m_firstByte){
 				char* outChars = (char*)outChars_;
                 fixed (byte* inData = inArray) {
