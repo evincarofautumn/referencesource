@@ -857,7 +857,7 @@ namespace System {
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
 
             unsafe {
-				/* FIXME: Avoid ToCharArray. */
+                /* FIXME: Avoid ToCharArray. */
                 fixed (char *src = this.ToCharArray()) {
                     Contract.Assert(src == null || src[this.Length] == '\0', "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
@@ -886,18 +886,18 @@ namespace System {
                         hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ pint[0];
                     }
 #else
-					if (src != null) {
-						int     c;
-						char *s = src;
-						while ((c = s[0]) != 0) {
-							hash1 = ((hash1 << 5) + hash1) ^ c;
-							c = s[1];
-							if (c == 0)
-								break;
-							hash2 = ((hash2 << 5) + hash2) ^ c;
-							s += 2;
-						}
-					}
+                    if (src != null) {
+                        int     c;
+                        char *s = src;
+                        while ((c = s[0]) != 0) {
+                            hash1 = ((hash1 << 5) + hash1) ^ c;
+                            c = s[1];
+                            if (c == 0)
+                                break;
+                            hash2 = ((hash2 << 5) + hash2) ^ c;
+                            s += 2;
+                        }
+                    }
 #endif
 #if !MONO && DEBUG
                     // We want to ensure we can change our hash function daily.
@@ -917,7 +917,7 @@ namespace System {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal int GetLegacyNonRandomizedHashCode() {
             unsafe {
-				/* FIXME: Avoid ToCharArray. */
+                /* FIXME: Avoid ToCharArray. */
                 fixed (char *src = this.ToCharArray()) {
                     Contract.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
