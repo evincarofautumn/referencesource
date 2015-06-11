@@ -3539,17 +3539,12 @@ namespace System {
             int currPos=0;
 
             if (compact) {
-                fixed (byte* destByte = &result.m_firstByte) {
-                    byte* dest = destByte;
-                    for (int i = 0; i < values.Length; ++i) {
-                        Contract.Assert(
-                            (currPos <= totalLength - values[i].Length),
-                            "[String.ConcatArray](currPos <= totalLength - values[i].Length)");
-                        /* FIXME: Use memcpy. */
-                        for (int j = 0; j < values[i].Length; ++j)
-                            *dest++ = values[i][j];
-                        currPos+=values[i].Length;
-                    }
+                for (int i = 0; i < values.Length; ++i) {
+                    Contract.Assert(
+                        (currPos <= totalLength - values[i].Length),
+                        "[String.ConcatArray](currPos <= totalLength - values[i].Length)");
+                    FillCompactStringChecked(result, currPos, values[i]);
+                    currPos+=values[i].Length;
                 }
             } else {
                 for (int i=0; i<values.Length; i++) {
