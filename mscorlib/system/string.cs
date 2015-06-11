@@ -1877,11 +1877,18 @@ namespace System {
             if (length == 0)
                 return String.Empty;
 
-            String result = FastAllocateString(length);
+            bool compact = CompactRepresentable(ptr + startIndex, length);
+            String result = FastAllocateString(length, compact ? ENCODING_ASCII : ENCODING_UTF16);
 
             try {
-                fixed(char *dest = result)
-                    wstrcpy(dest, pFrom, length);
+                fixed(byte* destByte = &result.m_firstByte) {
+                    if (compact) {
+                        for (int i = 0; i < length; ++i)
+                            destByte[i] = (byte)ptr[startIndex + i];
+                    } else {
+                        wstrcpy((char*)destByte, pFrom, length);
+                    }
+                }
                 return result;
             }
             catch (NullReferenceException) {
