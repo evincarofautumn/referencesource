@@ -1659,6 +1659,11 @@ namespace System {
             Buffer.Memcpy((byte*)dmem, (byte*)smem, charCount * 2); // 2 used everywhere instead of sizeof(char)
         }
 
+        private int SelectEncoding(bool compact)
+        {
+            return compact ? ENCODING_ASCII : ENCODING_UTF16;
+        }
+
         private bool CompactRepresentable(char value)
         {
             return (int)value <= 0x7F;
@@ -1686,7 +1691,7 @@ namespace System {
             if (value == null || value.Length == 0)
                 return String.Empty;
             bool compact = CompactRepresentable(value);
-            String result = FastAllocateString(value.Length, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            String result = FastAllocateString(value.Length, SelectEncoding(compact));
             unsafe {
                 fixed (byte* destByte = &result.m_firstByte)
                 fixed (char* source = value) {
@@ -1722,7 +1727,7 @@ namespace System {
 
             /* FIXME: Could infer non-compact encoding even if result could be compact. */
             bool compact = CompactRepresentable(value);
-            String result = FastAllocateString(length, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            String result = FastAllocateString(length, SelectEncoding(compact));
             unsafe {
                 fixed (byte* destByte = result)
                 fixed (char* source = value) {
@@ -1746,7 +1751,7 @@ namespace System {
                 return String.Empty;
 
             bool compact = CompactRepresentable(c);
-            String result = FastAllocateString(count, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            String result = FastAllocateString(count, SelectEncoding(compact));
             unsafe {
                 fixed (byte* destByte = &result.m_firstByte) {
                     if (compact) {
@@ -1836,7 +1841,7 @@ namespace System {
                     return String.Empty;
                 bool compact = CompactRepresentable(ptr, count);
 
-                String result = FastAllocateString(count, compact ? ENCODING_ASCII : ENCODING_UTF16);
+                String result = FastAllocateString(count, SelectEncoding(compact));
                 fixed (byte* destByte = &result.m_firstByte) {
                     if (compact) {
                         for (int i = 0; i < count; ++i)
@@ -1878,7 +1883,7 @@ namespace System {
                 return String.Empty;
 
             bool compact = CompactRepresentable(ptr + startIndex, length);
-            String result = FastAllocateString(length, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            String result = FastAllocateString(length, SelectEncoding(compact));
 
             try {
                 fixed(byte* destByte = &result.m_firstByte) {
@@ -3049,7 +3054,7 @@ namespace System {
             if (newLength == 0)
                 return String.Empty;
             bool compact = IsCompact && value.IsCompact;
-            String result = FastAllocateString(newLength, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            String result = FastAllocateString(newLength, SelectEncoding(compact));
             unsafe
             {
                 fixed (byte* srcThisByte = &m_firstByte)
@@ -3147,7 +3152,7 @@ namespace System {
             if (newLength == 0)
                 return String.Empty;
             bool compact = IsCompact;
-            String result = FastAllocateString(newLength, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            String result = FastAllocateString(newLength, SelectEncoding(compact));
             unsafe
             {
                 fixed (byte* srcByte = &m_firstByte)
@@ -3505,7 +3510,7 @@ namespace System {
                     break;
                 }
             }
-            String result = FastAllocateString(totalLength, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            String result = FastAllocateString(totalLength, SelectEncoding(compact));
             int currPos=0;
 
             if (compact) {
