@@ -1626,9 +1626,7 @@ namespace System {
             if (src.IsCompact) {
                 fixed (byte *pSrc_ = &src.m_firstByte)
                 fixed (byte *pDest_ = &dest.m_firstByte) {
-                    /* FIXME: Use memcpy. */
-                    for (int i = 0; i < src.Length; ++i)
-                        pDest_ [destPos + i] = pSrc_ [i];
+                    memcpy(pDest_ + destPos, pSrc_, src.Length);
                 }
             } else {
                 throw new NotImplementedException("FillCompactStringChecked");
