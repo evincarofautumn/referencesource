@@ -3048,17 +3048,25 @@ namespace System {
             int newLength = oldLength + insertLength;
             if (newLength == 0)
                 return String.Empty;
-            String result = FastAllocateString(newLength);
+            bool compact = IsCompact && value.IsCompact;
+            String result = FastAllocateString(newLength, compact ? ENCODING_ASCII : ENCODING_UTF16);
             unsafe
             {
-                /* FIXME: Avoid ToCharArray. */
-                fixed (char* srcThis = ToCharArray ())
-                fixed (char* srcInsert = value.ToCharArray ())
-                fixed (byte* dst_ = &result.m_firstByte) {
-                    char* dst = (char*)dst_;
-                    wstrcpy(dst, srcThis, startIndex);
-                    wstrcpy(dst + startIndex, srcInsert, insertLength);
-                    wstrcpy(dst + startIndex + insertLength, srcThis + startIndex, oldLength - startIndex);
+                fixed (byte* srcThisByte = &m_firstByte)
+                fixed (byte* srcInsertByte = &value.m_firstByte)
+                fixed (byte* dstByte = &result.m_firstByte) {
+                    if (compact) {
+                        memcpy(dstByte, srcThisByte, startIndex);
+                        memcpy(dstByte + startIndex, srcInsertByte, insertLength);
+                        memcpy(dstByte + startIndex + insertLength, srcThisByte + startIndex, oldLength - startIndex);
+                    } else {
+                        char* srcThis = (char*)srcThisByte;
+                        char* srcInsert = (char*)srcInsertByte;
+                        char* dst = (char*)dstByte;
+                        wstrcpy(dst, srcThis, startIndex);
+                        wstrcpy(dst + startIndex, srcInsert, insertLength);
+                        wstrcpy(dst + startIndex + insertLength, srcThis + startIndex, oldLength - startIndex);
+                    }
                 }
             }
             return result;
