@@ -3424,11 +3424,11 @@ namespace System {
             String result = FastAllocateString(str0Length + str1.Length, SelectEncoding(compact));
             
             if (compact) {
-                FillStringCompactChecked(result, 0, str0);
-                FillStringCompactChecked(result, str0Length, str1);
+                FillCompactStringChecked(result, 0, str0);
+                FillCompactStringChecked(result, str0Length, str1);
             } else {
-                FillStringNoncompactChecked(result, 0, str0);
-                FillStringNoncompactChecked(result, str0Length, str1);
+                FillNoncompactStringChecked(result, 0, str0);
+                FillNoncompactStringChecked(result, str0Length, str1);
             }
             
             return result;
@@ -3464,13 +3464,13 @@ namespace System {
             bool compact = str0.IsCompact && str1.IsCompact && str2.IsCompact;
             String result = FastAllocateString(totalLength, SelectEncoding(compact));
             if (compact) {
-                FillStringCompactChecked(result, 0, str0);
-                FillStringCompactChecked(result, str0.Length, str1);
-                FillStringCompactChecked(result, str0.Length + str1.Length, str2);
+                FillCompactStringChecked(result, 0, str0);
+                FillCompactStringChecked(result, str0.Length, str1);
+                FillCompactStringChecked(result, str0.Length + str1.Length, str2);
             } else {
-                FillStringNoncompactChecked(result, 0, str0);
-                FillStringNoncompactChecked(result, str0.Length, str1);
-                FillStringNoncompactChecked(result, str0.Length + str1.Length, str2);
+                FillNoncompactStringChecked(result, 0, str0);
+                FillNoncompactStringChecked(result, str0.Length, str1);
+                FillNoncompactStringChecked(result, str0.Length + str1.Length, str2);
             }
 
             return result;
@@ -3512,15 +3512,15 @@ namespace System {
             String result = FastAllocateString(totalLength, SelectEncoding(compact));
 
             if (compact) {
-                FillStringCompactChecked(result, 0, str0);
-                FillStringCompactChecked(result, str0.Length, str1);
-                FillStringCompactChecked(result, str0.Length + str1.Length, str2);
-                FillStringCompactChecked(result, str0.Length + str1.Length + str2.Length, str3);
+                FillCompactStringChecked(result, 0, str0);
+                FillCompactStringChecked(result, str0.Length, str1);
+                FillCompactStringChecked(result, str0.Length + str1.Length, str2);
+                FillCompactStringChecked(result, str0.Length + str1.Length + str2.Length, str3);
             } else {
-                FillStringNoncompactChecked(result, 0, str0);
-                FillStringNoncompactChecked(result, str0.Length, str1);
-                FillStringNoncompactChecked(result, str0.Length + str1.Length, str2);
-                FillStringNoncompactChecked(result, str0.Length + str1.Length + str2.Length, str3);
+                FillNoncompactStringChecked(result, 0, str0);
+                FillNoncompactStringChecked(result, str0.Length, str1);
+                FillNoncompactStringChecked(result, str0.Length + str1.Length, str2);
+                FillNoncompactStringChecked(result, str0.Length + str1.Length + str2.Length, str3);
             }
 
             return result;
