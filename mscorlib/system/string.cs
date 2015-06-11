@@ -3245,12 +3245,15 @@ namespace System {
 
             int length = str.Length;
 
-            String result = FastAllocateString(length);
+            bool compact = str.IsCompact;
+            String result = FastAllocateString(length, SelectEncoding(compact));
 
-            /* FIXME: Avoid ToCharArray. */
-            fixed (char* src = str.ToCharArray ())
-            fixed (byte* dest_ = &result.m_firstByte) {
-                wstrcpy((char*)dest_, src, length);
+            fixed (byte* srcByte = &str.m_firstByte)
+            fixed (byte* destByte = &result.m_firstByte) {
+                if (compact)
+                    memcpy(destByte, srcByte, length);
+                else
+                    wstrcpy((char*)destByte, (char*)srcByte, length);
             }
             return result;
         }
