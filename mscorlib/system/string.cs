@@ -1672,6 +1672,14 @@ namespace System {
             return true;
         }
 
+        private unsafe bool CompactRepresentable(char* value, int length)
+        {
+            for (int i = 0; i < length; ++i)
+                if (!CompactRepresentable(value[i]))
+                    return false;
+            return true;
+        }
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharArray(char [] value)
         {
@@ -1826,10 +1834,17 @@ namespace System {
                 int count = wcslen(ptr);
                 if (count == 0)
                     return String.Empty;
+                bool compact = CompactRepresentable(ptr, count);
 
-                String result = FastAllocateString(count);
-                fixed (char *dest = result)
-                    wstrcpy(dest, ptr, count);
+                String result = FastAllocateString(count, compact ? ENCODING_ASCII : ENCODING_UTF16);
+                fixed (byte* destByte = &result.m_firstByte) {
+                    if (compact) {
+                        for (int i = 0; i < count; ++i)
+                            destByte[i] = (byte)ptr[i];
+                    } else {
+                        wstrcpy((char*)destByte, ptr, count);
+                    }
+                }
                 return result;
             }
             catch (NullReferenceException) {
