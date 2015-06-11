@@ -3146,15 +3146,21 @@ namespace System {
             int newLength = Length - count;
             if (newLength == 0)
                 return String.Empty;
-            String result = FastAllocateString(newLength);
+            bool compact = IsCompact;
+            String result = FastAllocateString(newLength, compact ? ENCODING_ASCII : ENCODING_UTF16);
             unsafe
             {
-                /* FIXME: Avoid ToCharArray. */
-                fixed (char* src = ToCharArray ())
-                fixed (byte* dst_ = &result.m_firstByte) {
-                    char* dst = (char*)dst_;
-                    wstrcpy(dst, src, startIndex);
-                    wstrcpy(dst + startIndex, src + startIndex + count, newLength - startIndex);
+                fixed (byte* srcByte = &m_firstByte)
+                fixed (byte* dstByte = &result.m_firstByte) {
+                    if (compact) {
+                        memcpy(dstByte, srcByte, startIndex);
+                        memcpy(dstByte + startIndex, srcByte + startIndex + count, newLength - startIndex);
+                    } else {
+                        char* dst = (char*)dstByte;
+                        char* src = (char*)srcByte;
+                        wstrcpy(dst, src, startIndex);
+                        wstrcpy(dst + startIndex, src + startIndex + count, newLength - startIndex);
+                    }
                 }
             }
             return result;
