@@ -1659,7 +1659,7 @@ namespace System {
             Buffer.Memcpy((byte*)dmem, (byte*)smem, charCount * 2); // 2 used everywhere instead of sizeof(char)
         }
 
-        private int SelectEncoding(bool compact)
+        private static int SelectEncoding(bool compact)
         {
             return compact ? ENCODING_ASCII : ENCODING_UTF16;
         }
