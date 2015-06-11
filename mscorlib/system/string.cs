@@ -1480,7 +1480,8 @@ namespace System {
             if (stringLength == 0)
                 return String.Empty;
             
-            String s = FastAllocateString(stringLength);
+            /* FIXME: This could use ENCODING_ASCII, with a bit more cleverness. */
+            String s = FastAllocateString(stringLength, ENCODING_UTF16);
             fixed (byte* pTempChars_ = &s.m_firstByte)
             {
                 char* pTempChars = (char*)pTempChars_;
@@ -1661,18 +1662,28 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharArray(char [] value)
         {
-            if (value != null && value.Length != 0) {
-                String result = FastAllocateString(value.Length);
-
-                unsafe {
-                    fixed (char * dest = result, source = value) {
-                        wstrcpy(dest, source, value.Length);
+            if (value == null || value.Length == 0)
+                return String.Empty;
+            bool compact = true;
+            for (int i = 0; i < value.Length; ++i) {
+                if ((int)value[i] > 0x7F) {
+                    compact = false;
+                    break;
+                }
+            }
+            String result = FastAllocateString(value.Length, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            unsafe {
+                fixed (byte* destByte = &result.m_firstByte)
+                fixed (char* sourceByte = value) {
+                    if (compact) {
+                        for (int i = 0; i < value.Length; ++i)
+                            destByte[i] = (byte)sourceByte[i];
+                    } else {
+                        wstrcpy((char*)destByte, (char*)sourceByte, value.Length);
                     }
                 }
-                return result;
             }
-            else
-                return String.Empty;
+            return result;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
