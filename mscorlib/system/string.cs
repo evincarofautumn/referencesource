@@ -3419,11 +3419,17 @@ namespace System {
             }
 
             int str0Length = str0.Length;
+
+            bool compact = str0.IsCompact && str1.IsCompact;
+            String result = FastAllocateString(str0Length + str1.Length, SelectEncoding(compact));
             
-            String result = FastAllocateString(str0Length + str1.Length);
-            
-            FillStringChecked(result, 0,        str0);
-            FillStringChecked(result, str0Length, str1);
+            if (compact) {
+                FillStringCompactChecked(result, 0, str0);
+                FillStringCompactChecked(result, str0Length, str1);
+            } else {
+                FillStringNoncompactChecked(result, 0, str0);
+                FillStringNoncompactChecked(result, str0Length, str1);
+            }
             
             return result;
         }
@@ -3455,10 +3461,17 @@ namespace System {
 
             int totalLength = str0.Length + str1.Length + str2.Length;
 
-            String result = FastAllocateString(totalLength);
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0.Length, str1);
-            FillStringChecked(result, str0.Length + str1.Length, str2);
+            bool compact = str0.IsCompact && str1.IsCompact && str2.IsCompact;
+            String result = FastAllocateString(totalLength, SelectEncoding(compact));
+            if (compact) {
+                FillStringCompactChecked(result, 0, str0);
+                FillStringCompactChecked(result, str0.Length, str1);
+                FillStringCompactChecked(result, str0.Length + str1.Length, str2);
+            } else {
+                FillStringNoncompactChecked(result, 0, str0);
+                FillStringNoncompactChecked(result, str0.Length, str1);
+                FillStringNoncompactChecked(result, str0.Length + str1.Length, str2);
+            }
 
             return result;
         }
@@ -3495,11 +3508,20 @@ namespace System {
 
             int totalLength = str0.Length + str1.Length + str2.Length + str3.Length;
 
-            String result = FastAllocateString(totalLength);
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0.Length, str1);
-            FillStringChecked(result, str0.Length + str1.Length, str2);
-            FillStringChecked(result, str0.Length + str1.Length + str2.Length, str3);
+            bool compact = str0.IsCompact && str1.IsCompact && str2.IsCompact && str3.IsCompact;
+            String result = FastAllocateString(totalLength, SelectEncoding(compact));
+
+            if (compact) {
+                FillStringCompactChecked(result, 0, str0);
+                FillStringCompactChecked(result, str0.Length, str1);
+                FillStringCompactChecked(result, str0.Length + str1.Length, str2);
+                FillStringCompactChecked(result, str0.Length + str1.Length + str2.Length, str3);
+            } else {
+                FillStringNoncompactChecked(result, 0, str0);
+                FillStringNoncompactChecked(result, str0.Length, str1);
+                FillStringNoncompactChecked(result, str0.Length + str1.Length, str2);
+                FillStringNoncompactChecked(result, str0.Length + str1.Length + str2.Length, str3);
+            }
 
             return result;
         }
