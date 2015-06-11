@@ -3551,7 +3551,7 @@ namespace System {
                     Contract.Assert(
                         (currPos <= totalLength - values[i].Length),
                         "[String.ConcatArray](currPos <= totalLength - values[i].Length)");
-                    FillStringChecked(result, currPos, values[i]);
+                    FillNoncompactStringChecked(result, currPos, values[i]);
                     currPos+=values[i].Length;
                 }
             }

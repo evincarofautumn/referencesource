@@ -350,7 +350,8 @@ namespace System.Text {
             if (Length == 0)
                 return String.Empty;
 
-            string ret = string.FastAllocateString(Length);
+            /* FIXME: This could use ASCII with a bit more cleverness. */
+            string ret = string.FastAllocateString(Length, String.ENCODING_UTF16);
             StringBuilder chunk = this;
             unsafe {
                 fixed (char* destinationPtr = ret)
@@ -411,7 +412,8 @@ namespace System.Text {
             StringBuilder chunk = this;
             int sourceEndIndex = startIndex + length;
 
-            string ret = string.FastAllocateString(length);
+            /* FIXME: This could use ASCII with a bit more cleverness. */
+            string ret = string.FastAllocateString(length, String.ENCODING_UTF16);
             int curDestIndex = length;
             unsafe {
                 fixed (char* destinationPtr = ret)
