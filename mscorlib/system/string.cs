@@ -1659,10 +1659,15 @@ namespace System {
             Buffer.Memcpy((byte*)dmem, (byte*)smem, charCount * 2); // 2 used everywhere instead of sizeof(char)
         }
 
+        private bool CompactRepresentable(char value)
+        {
+            return (int)value <= 0x7F;
+        }
+
         private bool CompactRepresentable(char [] value)
         {
             for (int i = 0; i < value.Length; ++i)
-                if ((int)value[i] > 0x7F)
+                if (!CompactRepresentable(value[i]))
                     return false;
             return true;
         }
@@ -1727,11 +1732,21 @@ namespace System {
         [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharCount(char c, int count)
         {
-            if (count > 0) {
-                String result = FastAllocateString(count);
-                unsafe {
-                    fixed (char *dest = result) {
-                        char *dmem = dest;
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "count"));
+            if (count == 0)
+                return String.Empty;
+
+            bool compact = CompactRepresentable(c);
+            String result = FastAllocateString(count, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            unsafe {
+                fixed (byte* destByte = &result.m_firstByte) {
+                    if (compact) {
+                        /* FIXME: Unroll. */
+                        for (int i = 0; i < count; ++i)
+                            destByte[i] = (byte)c;
+                    } else {
+                        char *dmem = (char*)destByte;
                         while (((uint)dmem & 3) != 0 && count > 0) {
                             *dmem++ = c;
                             count--;
@@ -1754,12 +1769,8 @@ namespace System {
                             dmem[0] = c;
                     }
                 }
-                return result;
             }
-            else if (count == 0)
-                return String.Empty;
-            else
-                throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "count"));
+            return result;
         }
 
         [System.Security.SecurityCritical]  // auto-generated
