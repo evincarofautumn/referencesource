@@ -1659,27 +1659,29 @@ namespace System {
             Buffer.Memcpy((byte*)dmem, (byte*)smem, charCount * 2); // 2 used everywhere instead of sizeof(char)
         }
 
+        private bool CompactRepresentable(char [] value)
+        {
+            for (int i = 0; i < value.Length; ++i)
+                if ((int)value[i] > 0x7F)
+                    return false;
+            return true;
+        }
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharArray(char [] value)
         {
             if (value == null || value.Length == 0)
                 return String.Empty;
-            bool compact = true;
-            for (int i = 0; i < value.Length; ++i) {
-                if ((int)value[i] > 0x7F) {
-                    compact = false;
-                    break;
-                }
-            }
+            bool compact = CompactRepresentable(value);
             String result = FastAllocateString(value.Length, compact ? ENCODING_ASCII : ENCODING_UTF16);
             unsafe {
                 fixed (byte* destByte = &result.m_firstByte)
-                fixed (char* sourceByte = value) {
+                fixed (char* source = value) {
                     if (compact) {
                         for (int i = 0; i < value.Length; ++i)
-                            destByte[i] = (byte)sourceByte[i];
+                            destByte[i] = (byte)source[i];
                     } else {
-                        wstrcpy((char*)destByte, (char*)sourceByte, value.Length);
+                        wstrcpy((char*)destByte, source, value.Length);
                     }
                 }
             }
@@ -1702,18 +1704,24 @@ namespace System {
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
             Contract.EndContractBlock();
 
-            if (length > 0) {
-                String result = FastAllocateString(length);
+            if (length <= 0)
+                return String.Empty;
 
-                unsafe {
-                    fixed (char * dest = result, source = value) {
-                        wstrcpy(dest, source + startIndex, length);
+            /* FIXME: Could infer non-compact encoding even if result could be compact. */
+            bool compact = CompactRepresentable(value);
+            String result = FastAllocateString(length, compact ? ENCODING_ASCII : ENCODING_UTF16);
+            unsafe {
+                fixed (byte* destByte = result)
+                fixed (char* source = value) {
+                    if (compact) {
+                        for (int i = 0; i < length; ++i)
+                            destByte[i] = (byte)source[startIndex + i];
+                    } else {
+                        wstrcpy((char*)destByte, source + startIndex, length);
                     }
                 }
-                return result;
             }
-            else
-                return String.Empty;
+            return result;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
