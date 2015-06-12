@@ -261,12 +261,16 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
-			if (s.IsCompact)
-				throw new NotImplementedException ();
-            fixed (char* pChars = s.ToCharArray ())
-                fixed ( byte* pBytes = bytes)
-                    return GetBytes(pChars + charIndex, charCount,
-                                    pBytes + byteIndex, byteCount, null);
+            fixed (byte* pBytes = bytes) {
+                if (s.IsCompact) {
+                    /* FIXME: Avoid ToCharArray. */
+                    fixed (char* pChars = s.ToCharArray ())
+                        return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
+                } else {
+                    fixed (char* pChars = s)
+                        return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
+                }
+            }
         }
 
         // Encodes a range of characters in a character array into a range of bytes
