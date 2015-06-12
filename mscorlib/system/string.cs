@@ -267,7 +267,7 @@ namespace System {
             bool compact = separator.IsCompact;
             if (compact) {
                 for (int i = 0; i < value.Length; ++i) {
-                    if (!value[i].IsCompact) {
+                    if (value[i] != null && !value[i].IsCompact) {
                         compact = false;
                         break;
                     }
@@ -277,13 +277,17 @@ namespace System {
             fixed (byte* pointerToJointStringByte = &jointString.m_firstByte) {
 				if (compact) {
 					byte* dest = pointerToJointStringByte;
-					fixed (byte* src = &value[startIndex].m_firstByte)
-						memcpy(dest, src, value[startIndex].Length);
-					dest += value[startIndex].Length;
+					if (value[startIndex] != null) {
+						fixed (byte* src = &value[startIndex].m_firstByte)
+							memcpy(dest, src, value[startIndex].Length);
+						dest += value[startIndex].Length;
+					}
 					for (int i = startIndex + 1; i <= endIndex; ++i) {
 						fixed (byte* src = &separator.m_firstByte)
 							memcpy(dest, src, separator.Length);
 						dest += separator.Length;
+						if (value[i] == null)
+							continue;
 						fixed (byte* src = &value[i].m_firstByte)
 							memcpy(dest, src, value[i].Length);
 						dest += value[i].Length;
