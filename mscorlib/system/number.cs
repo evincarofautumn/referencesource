@@ -669,13 +669,29 @@ namespace System {
         [TargetedPatchingOptOut("Performance critical to inline across NGen image boundaries")]
 #endif
         private unsafe static char * MatchChars(char* p, string str) {
-			fixed (char* stringPointer = str.ToCharArray ())
+			fixed (char* stringPointer = str) {
+				if (str.IsCompact)
+					return MatchCharsCompact(p, (byte*)stringPointer);
 				return MatchChars(p, stringPointer);
+			}
         }
+
+        [System.Security.SecurityCritical]  // auto-generated
+        private unsafe static char * MatchCharsCompact(char* p, byte* str) {
+            Contract.Assert(p != null && str != null, "");
+            if ((char)*str == '\0')
+                return null;
+			// The French/Kazakh fix is not necessary here, since a compact
+			// string cannot contain a no-break space.
+            for (; ((char)*str != '\0'); p++, str++)
+                if (*p != *str)
+                    return null;
+            return p;
+        }
+
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe static char * MatchChars(char* p, char* str) {
             Contract.Assert(p != null && str != null, "");
-
             if (*str == '\0') {
                 return null;
             }
