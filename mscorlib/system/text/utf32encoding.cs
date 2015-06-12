@@ -136,10 +136,14 @@ namespace System.Text
                 throw new ArgumentNullException("s");
             Contract.EndContractBlock();
 
-			if (s.IsCompact)
-				throw new NotImplementedException ();
-            fixed (char* pChars = s.ToCharArray ())
-                return GetByteCount(pChars, s.Length, null);
+            if (s.IsCompact) {
+                /* FIXME: Avoid ToCharArray. */
+                fixed (char* pChars = s.ToCharArray ())
+                    return GetByteCount(pChars, s.Length, null);
+            } else {
+                fixed (char* pChars = s)
+                    return GetByteCount(pChars, s.Length, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -196,10 +200,16 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
-            fixed (char* pChars = s.ToCharArray ())
-                fixed ( byte* pBytes = bytes)
-					return GetBytes(pChars + charIndex, charCount,
-                                    pBytes + byteIndex, byteCount, null);
+            fixed (byte* pBytes = bytes) {
+                if (s.IsCompact) {
+                    /* FIXME: Avoid ToCharArray. */
+                    fixed (char* pChars = s.ToCharArray ())
+                        return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
+                } else {
+                    fixed (char* pChars = s)
+                        return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
+                }
+            }
         }
 
         // Encodes a range of characters in a character array into a range of bytes
