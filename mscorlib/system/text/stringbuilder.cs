@@ -158,9 +158,15 @@ namespace System.Text {
             m_ChunkLength = length;
 
             unsafe {
-                /* FIXME: Avoid ToCharArray. */
-                fixed (char* sourcePtr = value.ToCharArray ())
-                    ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
+                fixed (char* sourcePtr = value) {
+					if (value.IsCompact) {
+						/* FIXME: Unroll. */
+						for (int i = 0; i < length; ++i)
+							m_ChunkChars [i] = (char)((byte*)sourcePtr)[startIndex + i];
+					} else {
+						ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
+					}
+				}
             }
         }
 
@@ -673,10 +679,16 @@ namespace System.Text {
                     else
                     {
                         unsafe {
-                            /* FIXME: Avoid ToCharArray. */
-                            fixed (char* valuePtr = value.ToCharArray ())
-                            fixed (char* destPtr = &chunkChars[chunkLength])
-                                string.wstrcpy(destPtr, valuePtr, valueLen);
+                            fixed (char* valuePtr = value)
+							fixed (char* destPtr = &chunkChars[chunkLength]) {
+								if (value.IsCompact) {
+									/* FIXME: Unroll. */
+									for (int i = 0; i < valueLen; ++i)
+										destPtr[i] = (char)((byte*)valuePtr)[i];
+								} else {
+									string.wstrcpy(destPtr, valuePtr, valueLen);
+								}
+							}
                         }
                     }
                     m_ChunkLength = newCurrentIndex;
@@ -696,9 +708,15 @@ namespace System.Text {
 #endif
         private void AppendHelper(string value) {
             unsafe {
-                /* FIXME: Avoid ToCharArray. */
-                fixed (char* valueChars = value.ToCharArray ())
-                    Append(valueChars, value.Length);
+                fixed (char* valueChars = value) {
+					if (value.IsCompact) {
+						/* FIXME: This is probably very slow. */
+						for (int i = 0; i < value.Length; ++i)
+							Append((char)((byte*)valueChars)[i]);
+					} else {
+						Append(valueChars, value.Length);
+					}
+				}
             }
         }
 #if !MONO
@@ -763,9 +781,14 @@ namespace System.Text {
             }
 
             unsafe {
-                /* FIXME: Avoid ToCharArray. */
-                fixed (char* valueChars = value.ToCharArray ())
-                    Append(valueChars + startIndex, count);
+                fixed (char* valueChars = value) {
+					if (value.IsCompact) {
+						for (int i = 0; i < count; ++i)
+							Append((char)((byte*)valueChars)[startIndex + i]);
+					} else {
+						Append(valueChars + startIndex, count);
+					}
+				}
             }
             return this;
         }
