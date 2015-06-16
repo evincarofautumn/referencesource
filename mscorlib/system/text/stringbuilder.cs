@@ -162,7 +162,7 @@ namespace System.Text {
 					if (value.IsCompact) {
 						/* FIXME: Unroll. */
 						for (int i = 0; i < length; ++i)
-							m_ChunkChars [i] = (char)((byte*)sourcePtr)[startIndex + i];
+							m_ChunkChars[i] = (char)((byte*)sourcePtr)[startIndex + i];
 					} else {
 						ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
 					}
@@ -708,14 +708,9 @@ namespace System.Text {
 #endif
         private void AppendHelper(string value) {
             unsafe {
-                fixed (char* valueChars = value) {
-					if (value.IsCompact) {
-						/* FIXME: This is probably very slow. */
-						for (int i = 0; i < value.Length; ++i)
-							Append((char)((byte*)valueChars)[i]);
-					} else {
-						Append(valueChars, value.Length);
-					}
+				/* FIXME: Avoid ToCharArray. */
+                fixed (char* valueChars = value.ToCharArray ()) {
+					Append(valueChars, value.Length);
 				}
             }
         }
