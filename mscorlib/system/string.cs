@@ -51,6 +51,7 @@ namespace System {
 #endif
     {
         
+#if !MONO
         //
         //NOTE NOTE NOTE NOTE
         //These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
@@ -58,6 +59,8 @@ namespace System {
         [NonSerialized]private int  m_stringLength;
 
         [NonSerialized]private char m_firstChar;
+
+#endif
 
         //private static readonly char FmtMsgMarkerChar='%';
         //private static readonly char FmtMsgFmtCodeChar='!';
@@ -196,8 +199,20 @@ namespace System {
         private const int alignConst        = 3;
 #endif
 
+#if MONO
+        internal unsafe char FirstChar {
+            get {
+                if (IsCompact)
+                    return (char)m_firstByte;
+                fixed (byte* p = &m_firstByte)
+                    return *(char*)p;
+            }
+        }
+#else
         internal char FirstChar { get { return m_firstChar; } }
+#endif
 
+#if !MONO
         // Joins an array of strings together as one string with a separator between each original string.
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -264,7 +279,9 @@ namespace System {
 
             return jointString;
         }
+#endif
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static int CompareOrdinalIgnoreCaseHelper(String strA, String strB)
         {
@@ -301,6 +318,8 @@ namespace System {
                 return strA.Length - strB.Length;
             }
         }
+#endif
+
 #if !MONO
         // native call to COMString::CompareOrdinalEx
         [System.Security.SecurityCritical]  // auto-generated
@@ -316,6 +335,8 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe internal static extern int nativeCompareOrdinalIgnoreCaseWC(String strA, sbyte *strBBytes);
 #endif
+
+#if !MONO
         //
         // This is a helper method for the security team.  They need to uppercase some strings (guaranteed to be less 
         // than 0x80) before security is fully initialized.  Without security initialized, we can't grab resources (the nlp's)
@@ -349,6 +370,7 @@ namespace System {
             }
             return strOut;
         }
+#endif
 
         //
         //
@@ -360,6 +382,7 @@ namespace System {
         // Search/Query methods
         //
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private unsafe static bool EqualsHelper(String strA, String strB)
@@ -415,7 +438,9 @@ namespace System {
                 return (length <= 0);
             }
         }
+#endif
         
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe static int CompareOrdinalHelper(String strA, String strB)
         {
@@ -502,6 +527,7 @@ namespace System {
                 return strA.Length - strB.Length;
             }
         }
+#endif
 
         // Determines whether two strings match.
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -668,20 +694,20 @@ namespace System {
            return !String.Equals(a, b);
         }
 
-        // Gets the character at a specified position.
-        //
-        // Spec#: Apply the precondition here using a contract assembly.  Potential perf issue.
         [System.Runtime.CompilerServices.IndexerName("Chars")]
 #if MONO
         public unsafe char this[int index] {
             get {
-                if (index < 0 || index >= m_stringLength)
+                if (index < 0 || index >= Length)
                     throw new IndexOutOfRangeException ();
-                fixed (char* c = &m_firstChar)
-                    return c[index];
+                fixed (byte* p = &m_firstByte)
+                    return IsCompact ? (char)p[index] : ((char*)p)[index];
             }
         }
 #else
+        // Gets the character at a specified position.
+        //
+        // Spec#: Apply the precondition here using a contract assembly.  Potential perf issue.
         public extern char this[int index] {
             [ResourceExposure(ResourceScope.None)]
             [MethodImpl(MethodImplOptions.InternalCall)]
@@ -689,6 +715,8 @@ namespace System {
             get;
         }
 #endif
+
+#if !MONO
         // Converts a substring of this string to an array of characters.  Copies the
         // characters of this string beginning at position startIndex and ending at
         // startIndex + length - 1 to the character array buffer, beginning
@@ -717,7 +745,9 @@ namespace System {
                         wstrcpy(dest + destinationIndex, src + sourceIndex, count);
             }
         }
+#endif
         
+#if !MONO
         // Returns the entire string as an array of characters.
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public char[] ToCharArray() {
@@ -733,7 +763,9 @@ namespace System {
             }
             return chars;
         }
+#endif
     
+#if !MONO
         // Returns a substring of this string as an array of characters.
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -756,6 +788,7 @@ namespace System {
             }
             return chars;
         }
+#endif
 
         [Pure]
         public static bool IsNullOrEmpty(String value) {
@@ -794,6 +827,7 @@ namespace System {
         private static extern bool InternalUseRandomizedHashing();
 #endif
 
+#if MONO
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
         // they will return the same hash code.
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -809,7 +843,92 @@ namespace System {
 
             unsafe {
                 fixed (char *src = this) {
-                    Contract.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
+                    if (IsCompact) {
+                        byte* srcByte = (byte*)src;
+                        Contract.Assert(srcByte == null || srcByte[this.Length] == '\0', "srcByte[this.Length] == '\\0'");
+                        Contract.Assert( ((int)srcByte)%4 == 0, "Managed string should start at 4 bytes boundary");
+
+#if WIN32
+                        int hash1 = (5381<<16) + 5381;
+#else
+                        int hash1 = 5381;
+#endif
+                        int hash2 = hash1;
+
+                        /* FIXME: Reinstate #if WIN32 case for compact encoding. */
+                        int c;
+                        byte *s = srcByte;
+                        while ((c = s[0]) != 0) {
+                            hash1 = ((hash1 << 5) + hash1) ^ c;
+                            c = s[1];
+                            if (c == 0)
+                                break;
+                            hash2 = ((hash2 << 5) + hash2) ^ c;
+                            s += 2;
+                        }
+
+                        return hash1 + (hash2 * 1566083941);
+                    } else {
+                        Contract.Assert(src == null || src[this.Length] == '\0', "src[this.Length] == '\\0'");
+                        Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
+
+#if WIN32
+                        int hash1 = (5381<<16) + 5381;
+#else
+                        int hash1 = 5381;
+#endif
+                        int hash2 = hash1;
+
+#if WIN32
+                        // 32 bit machines.
+                        int* pint = (int *)src;
+                        int len = this.Length;
+                        while (len > 2)
+                        {
+                            hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ pint[0];
+                            hash2 = ((hash2 << 5) + hash2 + (hash2 >> 27)) ^ pint[1];
+                            pint += 2;
+                            len  -= 4;
+                        }
+
+                        if (len > 0)
+                        {
+                            hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ pint[0];
+                        }
+#else
+                        int     c;
+                        char *s = src;
+                        while ((c = s[0]) != 0) {
+                            hash1 = ((hash1 << 5) + hash1) ^ c;
+                            c = s[1];
+                            if (c == 0)
+                                break;
+                            hash2 = ((hash2 << 5) + hash2) ^ c;
+                            s += 2;
+                        }
+#endif
+                        return hash1 + (hash2 * 1566083941);
+                    }
+                }
+            }
+        }
+#else
+        // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
+        // they will return the same hash code.
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        public override int GetHashCode() {
+
+#if FEATURE_RANDOMIZED_STRING_HASHING
+            if(HashHelpers.s_UseRandomizedStringHashing)
+            {
+                return InternalMarvin32HashString(this, this.Length, 0);
+            }
+#endif // FEATURE_RANDOMIZED_STRING_HASHING
+
+            unsafe {
+                fixed (char *src = this) {
+                    Contract.Assert(src == null || src[this.Length] == '\0', "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
 
 #if WIN32
@@ -848,17 +967,22 @@ namespace System {
                     }
 #endif
 #if !MONO && DEBUG
-                    // We want to ensure we can change our hash function daily.
-                    // This is perfectly fine as long as you don't persist the
-                    // value from GetHashCode to disk or count on String A 
-                    // hashing before string B.  Those are bugs in your code.
+                    // See note [Daily Hash].
                     hash1 ^= ThisAssembly.DailyBuildNumber;
 #endif
                     return hash1 + (hash2 * 1566083941);
                 }
             }
         }
+#endif
 
+        // Note [Daily Hash]:
+        // We want to ensure we can change our hash function daily.
+        // This is perfectly fine as long as you don't persist the
+        // value from GetHashCode to disk or count on String A
+        // hashing before string B.  Those are bugs in your code.
+
+#if !MONO
         // Use this if and only if you need the hashcode to not change across app domains (e.g. you have an app domain agile
         // hash table).
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -905,16 +1029,15 @@ namespace System {
                     }
 #endif
 #if !MONO && DEBUG
-                    // We want to ensure we can change our hash function daily.
-                    // This is perfectly fine as long as you don't persist the
-                    // value from GetHashCode to disk or count on String A 
-                    // hashing before string B.  Those are bugs in your code.
+                    // See note [Daily Hash].
                     hash1 ^= ThisAssembly.DailyBuildNumber;
 #endif
                     return hash1 + (hash2 * 1566083941);
                 }
             }
         }
+#endif
+
 #if !MONO
         // Gets the length of this string
         //
@@ -1148,6 +1271,63 @@ namespace System {
             return stringArray;
         }       
 
+#if MONO
+        //--------------------------------------------------------------------    
+        // This function returns number of the places within baseString where
+        // instances of characters in Separator occur.
+        // Args: separator  -- A string containing all of the split characters.
+        //       sepList    -- an array of ints for split char indicies.
+        //--------------------------------------------------------------------
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        private unsafe int MakeSeparatorList(char[] separator, ref int[] sepList) {
+            int foundCount=0;
+
+            //If they passed null or an empty string, look for whitespace.
+            if (separator == null || separator.Length ==0) {
+                fixed (byte* chars = &m_firstByte) {
+                    if (IsCompact) {
+                        for (int i = 0; i < Length && foundCount < sepList.Length; i++)
+                            if (Char.IsWhiteSpace((char)chars[i]))
+                                sepList[foundCount++] = i;
+                    } else {
+                        for (int i = 0; i < Length && foundCount < sepList.Length; i++)
+                            if (Char.IsWhiteSpace(((char*)chars)[i]))
+                                sepList[foundCount++] = i;
+                    }
+                }
+            }
+            //If they passed in a string of chars, actually look for those chars.
+            else {
+                int sepListCount = sepList.Length;
+                int sepCount = separator.Length;
+                fixed (byte* chars = &m_firstByte)
+                fixed (char* pSepChars = separator) {
+                    if (IsCompact) {
+                        for (int i = 0 ; i < Length && foundCount < sepListCount; i++) {
+                            char* pSep = pSepChars;
+                            for (int j = 0; j < sepCount; j++, pSep++) {
+                                if ((char)chars[i] == *pSep) {
+                                    sepList[foundCount++]=i;
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        for (int i = 0 ; i < Length && foundCount < sepListCount; i++) {
+                            char* pSep = pSepChars;
+                            for (int j = 0; j < sepCount; j++, pSep++) {
+                                if (((char*)chars)[i] == *pSep) {
+                                    sepList[foundCount++]=i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return foundCount;
+        }
+#else
         //--------------------------------------------------------------------    
         // This function returns number of the places within baseString where 
         // instances of characters in Separator occur.         
@@ -1186,7 +1366,50 @@ namespace System {
             }
             return foundCount;
         }        
-        
+#endif
+
+#if MONO
+        //--------------------------------------------------------------------    
+        // This function returns number of the places within baseString where
+        // instances of separator strings occur.
+        // Args: separators -- An array containing all of the split strings.
+        //       sepList    -- an array of ints for split string indicies.
+        //       lengthList -- an array of ints for split string lengths.
+        //--------------------------------------------------------------------    
+        [System.Security.SecuritySafeCritical]  // auto-generated
+        private unsafe int MakeSeparatorList(String[] separators, ref int[] sepList, ref int[] lengthList) {
+            Contract.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
+            
+            int foundCount = 0;
+            int sepListCount = sepList.Length;
+            int sepCount = separators.Length;
+
+            fixed (char* pwzChars = this) {
+                for (int i=0; i< Length && foundCount < sepListCount; i++) {
+                    for( int j =0; j < separators.Length; j++) {
+                        String separator = separators[j];
+                        if (String.IsNullOrEmpty(separator)) {
+                            continue;
+                        }
+                        Int32 currentSepLength = separator.Length;
+                        /* FIXME: Lift IsCompact out of the loop. */
+                        if ( (IsCompact ? (char)((byte*)pwzChars)[i] : pwzChars[i]) == separator[0]
+                             && currentSepLength <= Length - i) {
+                            if (currentSepLength == 1
+                                || String.CompareOrdinal(this, i, separator, 0, currentSepLength) == 0) {
+                                sepList[foundCount] = i;
+                                lengthList[foundCount] = currentSepLength;
+                                foundCount++;
+                                i += currentSepLength - 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return foundCount;
+        }
+#else
         //--------------------------------------------------------------------    
         // This function returns number of the places within baseString where 
         // instances of separator strings occur.         
@@ -1225,6 +1448,7 @@ namespace System {
             }
             return foundCount;
         }
+#endif
        
         // Returns a substring of this string.
         //
@@ -1266,6 +1490,7 @@ namespace System {
             return InternalSubString(startIndex, length);
         }
 
+#if !MONO
         [System.Security.SecurityCritical]  // auto-generated
         unsafe string InternalSubString(int startIndex, int length) {
             Contract.Assert( startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
@@ -1280,7 +1505,7 @@ namespace System {
 
             return result;
         }
-    
+#endif
     
         // Removes a string of characters from the ends of this string.
         [Pure]
@@ -1364,6 +1589,8 @@ namespace System {
             return enc.GetString(b);
         }
 #endif
+
+#if !MONO
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect
         [System.Security.SecurityCritical]  // auto-generated
@@ -1392,6 +1619,8 @@ namespace System {
 
             return s;
         }
+#endif
+
 #if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe internal int ConvertToAnsi(byte *pbNativeBuffer, int cbNativeBuffer, bool fBestFit, bool fThrowOnUnmappableChar)
@@ -1486,11 +1715,14 @@ namespace System {
             return Normalization.Normalize(this, normalizationForm);
         }
 
+#if !MONO
         [System.Security.SecurityCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static String FastAllocateString(int length);
+#endif
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe private static void FillStringChecked(String dest, int destPos, String src)
         {
@@ -1506,6 +1738,7 @@ namespace System {
                     wstrcpy(pDest + destPos, pSrc, src.Length);
                 }
         }
+#endif
 
         // Creates a new string from the characters in a subarray.  The new string will
         // be created from the characters in value between startIndex and
@@ -1531,6 +1764,7 @@ namespace System {
             Buffer.Memcpy((byte*)dmem, (byte*)smem, charCount * 2); // 2 used everywhere instead of sizeof(char)
         }
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharArray(char [] value)
         {
@@ -1547,7 +1781,9 @@ namespace System {
             else
                 return String.Empty;
         }
+#endif
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharArrayStartLength(char [] value, int startIndex, int length)
         {
@@ -1577,7 +1813,9 @@ namespace System {
             else
                 return String.Empty;
         }
+#endif
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private String CtorCharCount(char c, int count)
         {
@@ -1618,6 +1856,7 @@ namespace System {
             else
                 throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", "count"));
         }
+#endif
 
         [System.Security.SecurityCritical]  // auto-generated
         private static unsafe int wcslen(char *ptr)
@@ -1652,6 +1891,7 @@ namespace System {
             return count;
         }
 
+#if !MONO
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe String CtorCharPtr(char *ptr)
         {
@@ -1679,7 +1919,9 @@ namespace System {
                 throw new ArgumentOutOfRangeException("ptr", Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
             }
         }
+#endif
 
+#if !MONO
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe String CtorCharPtrStartLength(char *ptr, int startIndex, int length)
         {
@@ -1713,6 +1955,7 @@ namespace System {
                 throw new ArgumentOutOfRangeException("ptr", Environment.GetResourceString("ArgumentOutOfRange_PartialWCHAR"));
             }
         }
+#endif
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         [ResourceExposure(ResourceScope.None)]
@@ -1791,10 +2034,8 @@ namespace System {
 
                 case StringComparison.Ordinal:
                     // Most common case: first character is different.
-                    if ((strA.m_firstChar - strB.m_firstChar) != 0)
-                    {
-                        return strA.m_firstChar - strB.m_firstChar;
-                    }
+                    if ((strA.FirstChar - strB.FirstChar) != 0)
+                        return strA.FirstChar - strB.FirstChar;
 
                     return CompareOrdinalHelper(strA, strB);
 
@@ -2099,10 +2340,8 @@ namespace System {
             }
 
             // Most common case, first character is different.
-            if ((strA.m_firstChar - strB.m_firstChar) != 0)
-            {
-                return strA.m_firstChar - strB.m_firstChar;
-            }
+            if ((strA.FirstChar - strB.FirstChar) != 0)
+                return strA.FirstChar - strB.FirstChar;
 
             // 
             return CompareOrdinalHelper(strA, strB);
@@ -2776,6 +3015,7 @@ namespace System {
             return InternalSubString(start, len);
         }
     
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public String Insert(int startIndex, String value)
         {
@@ -2810,6 +3050,8 @@ namespace System {
             }
             return result;
         }
+#endif
+
 #if !MONO
         // Replaces all instances of oldChar with newChar.
         //
@@ -2865,6 +3107,7 @@ namespace System {
             }
         }
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public String Remove(int startIndex, int count)
         {
@@ -2897,6 +3140,7 @@ namespace System {
             }
             return result;
         }
+#endif
 
         // a remove that just takes a startindex. 
         public string Remove( int startIndex ) {
@@ -2981,7 +3225,8 @@ namespace System {
                     .Acquire(format.Length + args.Length * 8)
                     .AppendFormatHelper(provider, format, args));
         }
-    
+
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public static String Copy (String str) {
             if (str==null) {
@@ -3000,6 +3245,7 @@ namespace System {
                 }
              return result;
         }
+#endif
 
         public static String Concat(Object arg0) {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -3141,7 +3387,7 @@ namespace System {
             return StringBuilderCache.GetStringAndRelease(result);            
         }
 
-
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static String Concat(String str0, String str1) {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -3170,7 +3416,9 @@ namespace System {
             
             return result;
         }
+#endif
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static String Concat(String str0, String str1, String str2) {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -3205,7 +3453,9 @@ namespace System {
 
             return result;
         }
+#endif
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static String Concat(String str0, String str1, String str2, String str3) {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -3246,7 +3496,9 @@ namespace System {
 
             return result;
         }
+#endif
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private static String ConcatArray(String[] values, int totalLength) {
             String result =  FastAllocateString(totalLength);
@@ -3262,6 +3514,7 @@ namespace System {
 
             return result;
         }
+#endif
 
         public static String Concat(params String[] values) {
             if (values == null)
@@ -3451,6 +3704,7 @@ namespace System {
             return new CharEnumerator(this);
         }
 
+#if !MONO
          // Copies the source String (byte buffer) to the destination IntPtr memory allocated with len bytes.
         [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static void InternalCopy(String src, IntPtr dest,int len)
@@ -3463,6 +3717,8 @@ namespace System {
                 Buffer.Memcpy(dstPtr, srcPtr, len);
             }
         }      
+#endif
+
     }
 
     [ComVisible(false)]

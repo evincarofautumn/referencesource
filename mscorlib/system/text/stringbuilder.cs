@@ -149,8 +149,18 @@ namespace System.Text {
             m_ChunkLength = length;
 
             unsafe {
-                fixed (char* sourcePtr = value)
-                    ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
+                fixed (char* sourcePtr = value) {
+#if MONO
+                    if (value.IsCompact) {
+                        /* FIXME: Unroll. */
+                        for (int i = 0; i < length; ++i)
+                            m_ChunkChars[i] = (char)((byte*)sourcePtr)[startIndex + i];
+                    } else
+#endif
+                    {
+                        ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
+                    }
+                }
             }
         }
 
@@ -337,7 +347,8 @@ namespace System.Text {
             if (Length == 0)
                 return String.Empty;
 
-            string ret = string.FastAllocateString(Length);
+            /* FIXME: This could use ASCII with a bit more cleverness. */
+            string ret = string.FastAllocateString(Length, String.ENCODING_UTF16);
             StringBuilder chunk = this;
             unsafe {
                 fixed (char* destinationPtr = ret)
@@ -398,7 +409,8 @@ namespace System.Text {
             StringBuilder chunk = this;
             int sourceEndIndex = startIndex + length;
 
-            string ret = string.FastAllocateString(length);
+            /* FIXME: This could use ASCII with a bit more cleverness. */
+            string ret = string.FastAllocateString(length, String.ENCODING_UTF16);
             int curDestIndex = length;
             unsafe {
                 fixed (char* destinationPtr = ret)
@@ -656,8 +668,18 @@ namespace System.Text {
                     {
                         unsafe {
                             fixed (char* valuePtr = value)
-                            fixed (char* destPtr = &chunkChars[chunkLength])
-                                string.wstrcpy(destPtr, valuePtr, valueLen);
+                            fixed (char* destPtr = &chunkChars[chunkLength]) {
+#if MONO
+                                if (value.IsCompact) {
+                                    /* FIXME: Unroll. */
+                                    for (int i = 0; i < valueLen; ++i)
+                                        destPtr[i] = (char)((byte*)valuePtr)[i];
+                                } else
+#endif
+                                {
+                                    string.wstrcpy(destPtr, valuePtr, valueLen);
+                                }
+                            }
                         }
                     }
                     m_ChunkLength = newCurrentIndex;
@@ -674,8 +696,14 @@ namespace System.Text {
         [System.Security.SecuritySafeCritical]  // auto-generated
         private void AppendHelper(string value) {
             unsafe {
-                fixed (char* valueChars = value)
-                    Append(valueChars, value.Length);
+                fixed (char* valueChars = value) {
+#if MONO
+					if (value.IsCompact)
+						Append((byte*)valueChars, value.Length);
+					else
+#endif
+						Append(valueChars, value.Length);
+                }
             }
         }
 #if !MONO
@@ -734,8 +762,17 @@ namespace System.Text {
             }
 
             unsafe {
-                fixed (char* valueChars = value)
-                    Append(valueChars + startIndex, count);
+                fixed (char* valueChars = value) {
+#if MONO
+                    if (value.IsCompact) {
+                        for (int i = 0; i < count; ++i)
+                            Append((char)((byte*)valueChars)[startIndex + i]);
+                    } else
+#endif
+                    {
+                        Append(valueChars + startIndex, count);
+                    }
+                }
             }
             return this;
         }
@@ -852,7 +889,12 @@ namespace System.Text {
                 fixed (char* valuePtr = value) {
                     while (count > 0)
                     {
-                        ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
+#if MONO
+						if (value.IsCompact)
+							ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, (byte*)valuePtr, value.Length);
+						else
+#endif
+							ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
                         --count;
                     }
                 }
@@ -1046,8 +1088,14 @@ namespace System.Text {
             if (value != null)
             {
                 unsafe {
-                    fixed (char* sourcePtr = value)
-                        Insert(index, sourcePtr, value.Length);
+                    fixed (char* sourcePtr = value) {
+#if MONO
+						if (value.IsCompact)
+							Insert(index, (byte*)sourcePtr, value.Length);
+						else
+#endif
+							Insert(index, sourcePtr, value.Length);
+					}
                 }
             }
             return this;
@@ -1702,10 +1750,65 @@ namespace System.Text {
         }
 
         /// <summary>
+        /// Appends 'value' of length 'count' to the stringBuilder. 
+        /// </summary>
+        [SecurityCritical]
+        internal unsafe StringBuilder Append(byte* value, int valueCount)
+        {
+            Contract.Assert(value != null, "Value can't be null");
+            Contract.Assert(valueCount >= 0, "Count can't be negative");
+
+            // This case is so common we want to optimize for it heavily. 
+            int newIndex = valueCount + m_ChunkLength;
+            if (newIndex <= m_ChunkChars.Length)
+            {
+                ThreadSafeCopy(value, m_ChunkChars, m_ChunkLength, valueCount);
+                m_ChunkLength = newIndex;
+            }
+            else
+            {
+                // Copy the first chunk
+                int firstLength = m_ChunkChars.Length - m_ChunkLength;
+                if (firstLength > 0)
+                {
+                    ThreadSafeCopy(value, m_ChunkChars, m_ChunkLength, firstLength);
+                    m_ChunkLength = m_ChunkChars.Length;
+                }
+
+                // Expand the builder to add another chunk. 
+                int restLength = valueCount - firstLength;
+                ExpandByABlock(restLength);
+                Contract.Assert(m_ChunkLength == 0, "Expand did not make a new block");
+
+                // Copy the second chunk
+                ThreadSafeCopy(value + firstLength, m_ChunkChars, 0, restLength);
+                m_ChunkLength = restLength;
+            }
+            VerifyClassInvariant();
+            return this;
+        }
+
+        /// <summary>
         /// Inserts 'value' of length 'cou
         /// </summary>
         [SecurityCritical]
         unsafe private void Insert(int index, char* value, int valueCount)
+        {
+            if ((uint)index > (uint)Length)
+            {
+                throw new ArgumentOutOfRangeException("index", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            }
+
+            if (valueCount > 0)
+            {
+                StringBuilder chunk;
+                int indexInChunk;
+                MakeRoom(index, valueCount, out chunk, out indexInChunk, false);
+                ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, value, valueCount);
+            }
+        }
+        [SecurityCritical]
+        unsafe private void Insert(int index, byte* value, int valueCount)
         {
             if ((uint)index > (uint)Length)
             {
@@ -1750,7 +1853,12 @@ namespace System.Text {
                     for (; ; )
                     {
                         // Copy in the new string for the ith replacement
-                        ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, valuePtr, value.Length);
+#if MONO
+						if (value.IsCompact)
+							ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, (byte*)valuePtr, value.Length);
+						else
+#endif
+							ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, valuePtr, value.Length);
                         int gapStart = replacements[i] + removeCount;
                         i++;
                         if (i >= replacementsCount)
@@ -1841,6 +1949,33 @@ namespace System.Text {
                 }
             }
         }
+        [SecurityCritical]
+        unsafe private void ReplaceInPlaceAtChunk(ref StringBuilder chunk, ref int indexInChunk, byte* value, int count)
+        {
+            if (count != 0)
+            {
+                for (; ; )
+                {
+                    int lengthInChunk = chunk.m_ChunkLength - indexInChunk;
+                    Contract.Assert(lengthInChunk >= 0, "index not in chunk");
+
+                    int lengthToCopy = Math.Min(lengthInChunk, count);
+                    ThreadSafeCopy(value, chunk.m_ChunkChars, indexInChunk, lengthToCopy);
+
+                    // Advance the index. 
+                    indexInChunk += lengthToCopy;
+                    if (indexInChunk >= chunk.m_ChunkLength)
+                    {
+                        chunk = Next(chunk);
+                        indexInChunk = 0;
+                    }
+                    count -= lengthToCopy;
+                    if (count == 0)
+                        break;
+                    value += lengthToCopy;
+                }
+            }
+        }
 
         /// <summary>
         /// We have to prevent hackers from causing modification off the end of an array.
@@ -1856,6 +1991,24 @@ namespace System.Text {
                 {
                     fixed (char* destinationPtr = &destination[destinationIndex])
                         string.wstrcpy(destinationPtr, sourcePtr, count);
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("destinationIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                }
+            }
+        }
+        [SecurityCritical]
+        unsafe private static void ThreadSafeCopy(byte* sourcePtr, char[] destination, int destinationIndex, int count)
+        {
+            if (count > 0)
+            {
+                if ((uint)destinationIndex <= (uint)destination.Length && (destinationIndex + count) <= destination.Length)
+                {
+                    fixed (char* destinationPtr = &destination[destinationIndex]) {
+						for (int i = 0; i < count; ++i)
+							destinationPtr[i] = (char)sourcePtr[i];
+					}
                 }
                 else
                 {
