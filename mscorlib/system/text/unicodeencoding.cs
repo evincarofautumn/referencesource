@@ -135,8 +135,16 @@ namespace System.Text
                 throw new ArgumentNullException("s");
             Contract.EndContractBlock();
 
-            fixed (char* pChars = s)
+            fixed (char* pChars = s) {
+#if MONO
+                /* This is safe because a compact string cannot contain invalid
+                 * Unicode, so fallbacks are unnecessary.
+                 */
+                if (s.IsCompact)
+                    return s.Length * CharSize;
+#endif
                 return GetByteCount(pChars, s.Length, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -194,10 +202,28 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
-            fixed (char* pChars = s)
-                fixed ( byte* pBytes = bytes)
-                    return GetBytes(pChars + charIndex, charCount,
-                                    pBytes + byteIndex, byteCount, null);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = s) {
+#if MONO
+                if (s.IsCompact) {
+                    if (bigEndian) {
+                        for (int i = 0; i < charCount; ++i) {
+                            pBytes[byteIndex + CharSize * i + 0] = 0;
+                            pBytes[byteIndex + CharSize * i + 1] = ((byte*)pChars)[charIndex + i];
+                        }
+                    } else {
+                        for (int i = 0; i < charCount; ++i) {
+                            pBytes[byteIndex + CharSize * i + 0] = ((byte*)pChars)[charIndex + i];
+                            pBytes[byteIndex + CharSize * i + 1] = 0;
+                        }
+                    }
+                    return charCount * CharSize;
+                }
+#endif
+                return GetBytes(
+                    pChars + charIndex, charCount,
+                    pBytes + byteIndex, byteCount, null);
+            }
         }
 
         // Encodes a range of characters in a character array into a range of bytes

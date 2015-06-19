@@ -158,8 +158,16 @@ namespace System.Text
                 throw new ArgumentNullException("s");
             Contract.EndContractBlock();
 
-            fixed (char* pChars = chars)
+            fixed (char* pChars = chars) {
+#if MONO
+                /* This is safe because a compact string cannot contain invalid
+                 * Unicode, so fallbacks are unnecessary.
+                 */
+                if (chars.IsCompact)
+                    return chars.Length;
+#endif
                 return GetByteCount(pChars, chars.Length, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -217,10 +225,18 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
 
-            fixed (char* pChars = s)
-                fixed ( byte* pBytes = bytes)
-                    return GetBytes(pChars + charIndex, charCount,
-                                    pBytes + byteIndex, byteCount, null);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = s) {
+#if MONO
+                if (s.IsCompact) {
+                    Buffer.Memcpy(pBytes + byteIndex, (byte*)pChars + charIndex, charCount);
+                    return charCount;
+                }
+#endif
+                return GetBytes(
+                    pChars + charIndex, charCount,
+                    pBytes + byteIndex, byteCount, null);
+            }
         }
 
         // Encodes a range of characters in a character array into a range of bytes
