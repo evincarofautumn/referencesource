@@ -159,6 +159,7 @@ namespace System.Text {
         }
 #endif
 
+#if !MONO
         // Creates an empty StringBuilder with a minimum capacity of capacity
         // and a maximum capacity of maxCapacity.
         public StringBuilder(int capacity, int maxCapacity) {
@@ -181,7 +182,9 @@ namespace System.Text {
             m_MaxCapacity = maxCapacity;
             m_ChunkChars = new char[capacity];
         }
+#endif
 
+#if !MONO
 #if FEATURE_SERIALIZATION
         [System.Security.SecurityCritical]  // auto-generated
         private StringBuilder(SerializationInfo info, StreamingContext context) {
@@ -245,6 +248,7 @@ namespace System.Text {
             m_ChunkPrevious = null;
             VerifyClassInvariant();
         }
+#endif
 
         [System.Security.SecurityCritical]  // auto-generated
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
@@ -263,6 +267,7 @@ namespace System.Text {
         }
 #endif //FEATURE_SERIALIZATION
 
+#if !MONO
         [System.Diagnostics.Conditional("_DEBUG")]
         private void VerifyClassInvariant() {
             BCLDebug.Correctness((uint)(m_ChunkOffset + m_ChunkChars.Length) >= m_ChunkOffset, "Integer Overflow");
@@ -289,7 +294,9 @@ namespace System.Text {
                 currentBlock = prevBlock;
             }
         }
+#endif
 
+#if !MONO
         public int Capacity {
             get { return m_ChunkChars.Length + m_ChunkOffset; }
             set {
@@ -312,6 +319,7 @@ namespace System.Text {
                 }
             }
         }
+#endif
 
         public int MaxCapacity {
             get { return m_MaxCapacity; }
@@ -333,6 +341,7 @@ namespace System.Text {
             return Capacity;
         }
 
+#if !MONO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString() {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -374,8 +383,9 @@ namespace System.Text {
             }
             return ret;
         }
+#endif
 
-
+#if !MONO
         // Converts a substring of this string builder to a String.
         [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(int startIndex, int length) {
@@ -451,6 +461,7 @@ namespace System.Text {
             }
             return ret;
         }
+#endif
 
         // Convenience method for sb.Length=0;
         public StringBuilder Clear() {
@@ -462,6 +473,7 @@ namespace System.Text {
         // instance, the StringBuilder is truncated.  If length is greater than the current 
         // instance, nulls are appended.  The capacity is adjusted to be the same as the length.
 
+#if !MONO
         public int Length {
             get {
                 Contract.Ensures(Contract.Result<int>() >= 0);
@@ -519,7 +531,9 @@ namespace System.Text {
                 Contract.Assert(Capacity >= originalCapacity, "setting the Length should never decrease the Capacity");
             }
         }
+#endif
 
+#if !MONO
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public char this[int index] {
             // 
@@ -558,7 +572,9 @@ namespace System.Text {
                 }
             }
         }
+#endif
 
+#if !MONO
         // Appends a character at the end of this string builder. The capacity is adjusted as needed.
         public StringBuilder Append(char value, int repeatCount) {
             if (repeatCount<0) {
@@ -590,6 +606,7 @@ namespace System.Text {
             VerifyClassInvariant();
             return this;
         }
+#endif
 
         // Appends an array of characters at the end of this string builder. The capacity is adjusted as needed. 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -637,7 +654,7 @@ namespace System.Text {
             return this;
         }
 
-
+#if !MONO
         // Appends a copy of this string at the end of this string builder.
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(String value) {
@@ -684,7 +701,7 @@ namespace System.Text {
             }
             return this;
         }
-
+#endif
 
         // We put this fixed in its own helper to avoid the cost zero initing valueChars in the
         // case we don't actually use it.  
@@ -785,6 +802,7 @@ namespace System.Text {
             return Append(Environment.NewLine);
         }
 
+#if !MONO
         [System.Runtime.InteropServices.ComVisible(false)]
         [SecuritySafeCritical]
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) {
@@ -844,6 +862,7 @@ namespace System.Text {
                 chunk = chunk.m_ChunkPrevious;
             }
         }
+#endif
 
         // Inserts multiple copies of a string into this string builder at the specified position.
         // Existing characters are shifted to make room for the new text.
@@ -961,6 +980,7 @@ namespace System.Text {
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
+#if !MONO
         // Appends a character at the end of this string builder. The capacity is adjusted as needed.
         public StringBuilder Append(char value) {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
@@ -971,6 +991,7 @@ namespace System.Text {
                 Append(value, 1);
             return this;
         }
+#endif
 
         // Appends a short to this string builder.
         // The capacity is adjusted as needed. 
@@ -1532,6 +1553,7 @@ namespace System.Text {
             return Replace(oldValue, newValue, 0, Length);
         }
 
+#if !MONO
         public bool Equals(StringBuilder sb) 
         {
             if (sb == null)
@@ -1576,6 +1598,7 @@ namespace System.Text {
                     return false;
             }
         }
+#endif
 
         public StringBuilder Replace(String oldValue, String newValue, int startIndex, int count)
         {
@@ -1665,6 +1688,8 @@ namespace System.Text {
         public StringBuilder Replace(char oldChar, char newChar) {
             return Replace(oldChar, newChar, 0, Length);
         }
+
+#if !MONO
         public StringBuilder Replace(char oldChar, char newChar, int startIndex, int count) {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
@@ -1700,7 +1725,9 @@ namespace System.Text {
             }
             return this;
         }
+#endif
 
+#if !MONO
         /// <summary>
         /// Appends 'value' of length 'count' to the stringBuilder. 
         /// </summary>
@@ -1743,7 +1770,9 @@ namespace System.Text {
             VerifyClassInvariant();
             return this;
         }
+#endif
 
+#if !MONO
         /// <summary>
         /// Appends 'value' of length 'count' to the stringBuilder. 
         /// </summary>
@@ -1782,6 +1811,7 @@ namespace System.Text {
             VerifyClassInvariant();
             return this;
         }
+#endif
 
         /// <summary>
         /// Inserts 'value' of length 'cou
@@ -1819,6 +1849,7 @@ namespace System.Text {
             }
         }
 
+#if !MONO
         /// <summary>
         /// 'replacements' is a list of index (relative to the begining of the 'chunk' to remove
         /// 'removeCount' characters and replace them with 'value'.   This routine does all those 
@@ -1882,7 +1913,9 @@ namespace System.Text {
                 }
             }
         }
+#endif
 
+#if !MONO
         /// <summary>
         /// Returns true if the string that is starts at 'chunk' and 'indexInChunk, and has a logical
         /// length of 'count' starts with the string 'value'. 
@@ -1910,7 +1943,9 @@ namespace System.Text {
             }
             return true;
         }
+#endif
 
+#if !MONO
         /// <summary>
         /// ReplaceInPlaceAtChunk is the logical equivalent of 'memcpy'.  Given a chunk and ann index in
         /// that chunk, it copies in 'count' characters from 'value' and updates 'chunk, and indexInChunk to 
@@ -1944,6 +1979,9 @@ namespace System.Text {
                 }
             }
         }
+#endif
+
+#if !MONO
         [SecurityCritical]
         unsafe private void ReplaceInPlaceAtChunk(ref StringBuilder chunk, ref int indexInChunk, byte* value, int count)
         {
@@ -1971,6 +2009,7 @@ namespace System.Text {
                 }
             }
         }
+#endif
 
         /// <summary>
         /// We have to prevent hackers from causing modification off the end of an array.
@@ -2011,6 +2050,7 @@ namespace System.Text {
                 }
             }
         }
+
 #if !MONO
          // Copies the source StringBuilder to the destination IntPtr memory allocated with len bytes.
         [System.Security.SecurityCritical]  // auto-generated
@@ -2038,6 +2078,7 @@ namespace System.Text {
             } while(currentSrc != null);
         }
 #endif
+
         /// <summary>
         /// Finds the chunk for the logical index (number of characters in the whole stringbuilder) 'index'
         /// YOu can then get the offset in this chunk by subtracting the m_BlockOffset field from 'index' 
@@ -2086,6 +2127,7 @@ namespace System.Text {
             return FindChunkForIndex(chunk.m_ChunkOffset + chunk.m_ChunkLength);
         }
 
+#if !MONO
         /// <summary>
         /// Assumes that 'this' is the last chunk in the list and that it is full.  Upon return the 'this'
         /// block is updated so that it is a new block that has at least 'minBlockCharCount' characters.
@@ -2123,7 +2165,9 @@ namespace System.Text {
 
             VerifyClassInvariant();
         }
+#endif
 
+#if !MONO
         /// <summary>
         /// Used by ExpandByABlock to create a new chunk.  The new chunk is a copied from 'from'
         /// In particular the buffer is shared.  It is expected that 'from' chunk (which represents
@@ -2138,7 +2182,9 @@ namespace System.Text {
             m_MaxCapacity = from.m_MaxCapacity;
             VerifyClassInvariant();
         }
+#endif
 
+#if !MONO
         /// <summary>
         /// Creates a gap of size 'count' at the logical offset (count of characters in the whole string
         /// builder) 'index'.  It returns the 'chunk' and 'indexInChunk' which represents a pointer to
@@ -2216,7 +2262,9 @@ namespace System.Text {
 
             VerifyClassInvariant();
         }
+#endif
 
+#if !MONO
         /// <summary>
         ///  Used by MakeRoom to allocate another chunk.  
         /// </summary>
@@ -2231,7 +2279,9 @@ namespace System.Text {
                 m_ChunkOffset = previousBlock.m_ChunkOffset + previousBlock.m_ChunkLength;
             VerifyClassInvariant();
         }
+#endif
 
+#if !MONO
         /// <summary>
         /// Removes 'count' characters from the logical index 'startIndex' and returns the chunk and 
         /// index in the chunk of that logical index in the out parameters.  
@@ -2302,5 +2352,7 @@ namespace System.Text {
             Contract.Assert(chunk != null, "fell off beginning of string!");
             VerifyClassInvariant();
         }
+#endif
+
     }
 }
