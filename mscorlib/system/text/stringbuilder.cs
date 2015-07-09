@@ -45,7 +45,7 @@ namespace System.Text {
     [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     [StructLayout (LayoutKind.Sequential)]
-    public sealed class StringBuilder : ISerializable {
+    public sealed partial class StringBuilder : ISerializable {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds
         // a chunk of the string.  It turns out string as a whole can also be represented as just a chunk, 
         // so that is what we do.  
@@ -55,7 +55,9 @@ namespace System.Text {
         //  CLASS VARIABLES
         //
         //
+#if !MONO
         internal char[] m_ChunkChars;                // The characters in this block
+#endif
         internal StringBuilder m_ChunkPrevious;      // Link to the block logically before this block
         internal int m_ChunkLength;                  // The index in m_ChunkChars that represent the end of the block
         internal int m_ChunkOffset;                  // The logial offset (sum of all characters in previous blocks)
@@ -123,6 +125,7 @@ namespace System.Text {
             : this(value, 0, ((value != null) ? value.Length : 0), capacity) {
         }
 
+#if !MONO
         // Creates a new string builder from the specifed substring with the specified
         // capacity.  The maximum number of characters is set by capacity.
         // 
@@ -159,19 +162,11 @@ namespace System.Text {
 
             unsafe {
                 fixed (char* sourcePtr = value) {
-#if MONO
-                    if (value.IsCompact) {
-                        /* FIXME: Unroll. */
-                        for (int i = 0; i < length; ++i)
-                            m_ChunkChars[i] = (char)((byte*)sourcePtr)[startIndex + i];
-                    } else
-#endif
-                    {
-                        ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
-                    }
+                    ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
                 }
             }
         }
+#endif
 
         // Creates an empty StringBuilder with a minimum capacity of capacity
         // and a maximum capacity of maxCapacity.
@@ -1984,24 +1979,6 @@ namespace System.Text {
                 {
                     fixed (char* destinationPtr = &destination[destinationIndex])
                         string.wstrcpy(destinationPtr, sourcePtr, count);
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException("destinationIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
-                }
-            }
-        }
-        [SecurityCritical]
-        unsafe private static void ThreadSafeCopy(byte* sourcePtr, char[] destination, int destinationIndex, int count)
-        {
-            if (count > 0)
-            {
-                if ((uint)destinationIndex <= (uint)destination.Length && (destinationIndex + count) <= destination.Length)
-                {
-                    fixed (char* destinationPtr = &destination[destinationIndex]) {
-						for (int i = 0; i < count; ++i)
-							destinationPtr[i] = (char)sourcePtr[i];
-					}
                 }
                 else
                 {
