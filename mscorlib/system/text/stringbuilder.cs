@@ -55,13 +55,18 @@ namespace System.Text {
         //  CLASS VARIABLES
         //
         //
-#if !MONO
+#if MONO
+        internal byte[] m_ChunkBytes;
+#else
         internal char[] m_ChunkChars;                // The characters in this block
 #endif
         internal StringBuilder m_ChunkPrevious;      // Link to the block logically before this block
         internal int m_ChunkLength;                  // The index in m_ChunkChars that represent the end of the block
         internal int m_ChunkOffset;                  // The logial offset (sum of all characters in previous blocks)
         internal int m_MaxCapacity = 0;
+#if MONO
+		internal bool m_IsCompact;
+#endif
 
         //
         //
