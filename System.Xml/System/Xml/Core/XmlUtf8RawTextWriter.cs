@@ -1284,7 +1284,7 @@ namespace System.Xml {
 
             if ( checkCharacters ) {
                 // This method will never be called on surrogates, so it is ok to pass in '\0' to the CreateInvalidCharException
-                throw XmlConvert.CreateInvalidCharException( (char)ch, '\0' );
+                throw XmlConvert.CreateInvalidCharException( (char)ch, '#' );
             }
             else {
                 if ( entitize ) {
