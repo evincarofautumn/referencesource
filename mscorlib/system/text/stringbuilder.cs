@@ -779,16 +779,19 @@ namespace System.Text {
             }
 
             unsafe {
-                fixed (char* valueChars = value) {
 #if MONO
-                    if (value.IsCompact) {
-                        for (int i = 0; i < count; ++i)
+                if (value.IsCompact) {
+                    for (int i = 0; i < count; ++i) {
+                        /* FIXME: Do this outside the loop. */
+                        fixed (char* valueChars = value) {
                             Append((char)((byte*)valueChars)[startIndex + i]);
-                    } else
-#endif
-                    {
-                        Append(valueChars + startIndex, count);
+                        }
                     }
+                } else
+#endif
+                {
+                    fixed (char* valueChars = value)
+                        Append(valueChars + startIndex, count);
                 }
             }
             return this;
