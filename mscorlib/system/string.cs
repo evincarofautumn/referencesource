@@ -2006,6 +2006,8 @@ namespace System {
             }
             Contract.EndContractBlock();
 
+			// Console.WriteLine ("Compare(\"{0}\", \"{1}\", {2})", strA, strB, comparisonType);
+
             if ((Object)strA == (Object)strB) {
                 return 0;
             }
