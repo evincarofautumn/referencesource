@@ -229,7 +229,7 @@ namespace System.Text
             fixed (char* pChars = s) {
 #if MONO
                 if (s.IsCompact) {
-                    Buffer.Memcpy(pBytes + byteIndex, (byte*)pChars + charIndex, charCount);
+                    Buffer.Memcpy(pBytes + byteIndex, (byte*)pChars + charIndex, byteCount);
                     return charCount;
                 }
 #endif
