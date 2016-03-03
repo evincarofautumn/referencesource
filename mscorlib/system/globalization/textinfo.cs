@@ -982,9 +982,9 @@ namespace System.Globalization {
 #if MONO
 		unsafe int GetInvariantCaseInsensitiveHashCode (string str)
 		{
-			fixed (char * c = str) {
+			fixed (byte* c = &str.m_firstByte) {
 				if (str.IsCompact) {
-					byte * cc = (byte *)c;
+					byte * cc = c;
 					byte * end = cc + str.Length - 1;
 					int h = 0;
 					for (;cc < end; cc += 2) {
@@ -996,7 +996,7 @@ namespace System.Globalization {
 						h = (h << 5) - h + Char.ToUpperInvariant ((char)*cc);
 					return h;
 				} else {
-					char * cc = c;
+					char * cc = (char *)c;
 					char * end = cc + str.Length - 1;
 					int h = 0;
 					for (;cc < end; cc += 2) {
