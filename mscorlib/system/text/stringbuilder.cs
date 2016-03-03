@@ -713,14 +713,17 @@ namespace System.Text {
         [System.Security.SecuritySafeCritical]  // auto-generated
         private void AppendHelper(string value) {
             unsafe {
-                fixed (char* valueChars = value) {
 #if MONO
+                fixed (byte* valueBytes = &value.m_firstByte) {
 					if (value.IsCompact)
-						Append((byte*)valueChars, value.Length);
+						Append(valueBytes, value.Length);
 					else
-#endif
-						Append(valueChars, value.Length);
+						Append((char*)valueBytes, value.Length);
                 }
+#else
+                fixed (char* valueChars = value)
+                    Append(valueChars, value.Length);
+#endif
             }
         }
 #if !MONO
@@ -783,16 +786,18 @@ namespace System.Text {
                 if (value.IsCompact) {
                     for (int i = 0; i < count; ++i) {
                         /* FIXME: Do this outside the loop. */
-                        fixed (char* valueChars = value) {
-                            Append((char)((byte*)valueChars)[startIndex + i]);
+                        fixed (byte* valueBytes = &value.m_firstByte) {
+                            Append((char)valueBytes[startIndex + i]);
                         }
                     }
-                } else
-#endif
-                {
-                    fixed (char* valueChars = value)
-                        Append(valueChars + startIndex, count);
+                } else {
+                    fixed (byte* valueBytes = &value.m_firstByte)
+                        Append((char*)valueBytes + startIndex, count);
                 }
+#else
+                fixed (char* valueChars = value)
+                    Append(valueChars + startIndex, count);
+#endif
             }
             return this;
         }
@@ -908,18 +913,26 @@ namespace System.Text {
             int indexInChunk;
             MakeRoom(index, (int) insertingChars, out chunk, out indexInChunk, false);
             unsafe {
-                fixed (char* valuePtr = value) {
+#if MONO
+                fixed (byte* valuePtr = &value.m_firstByte) {
                     while (count > 0)
                     {
-#if MONO
-						if (value.IsCompact)
-							ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, (byte*)valuePtr, value.Length);
-						else
-#endif
-							ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
+                        if (value.IsCompact)
+                            ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
+                        else
+                            ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, (char*)valuePtr, value.Length);
                         --count;
                     }
                 }
+#else
+                fixed (char* valuePtr = value) {
+                    while (count > 0)
+                    {
+                        ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
+                        --count;
+                    }
+                }
+#endif
             }
             return this;
         }
@@ -1112,14 +1125,17 @@ namespace System.Text {
             if (value != null)
             {
                 unsafe {
-                    fixed (char* sourcePtr = value) {
 #if MONO
-						if (value.IsCompact)
-							Insert(index, (byte*)sourcePtr, value.Length);
-						else
+                    fixed (byte* sourcePtr = &value.m_firstByte) {
+                        if (value.IsCompact)
+                            Insert(index, sourcePtr, value.Length);
+                        else
+                            Insert(index, (char*)sourcePtr, value.Length);
+                    }
+#else
+                    fixed (char* sourcePtr = value)
+                        Insert(index, sourcePtr, value.Length);
 #endif
-							Insert(index, sourcePtr, value.Length);
-					}
                 }
             }
             return this;
@@ -1887,12 +1903,7 @@ namespace System.Text {
                     for (; ; )
                     {
                         // Copy in the new string for the ith replacement
-#if MONO
-						if (value.IsCompact)
-							ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, (byte*)valuePtr, value.Length);
-						else
-#endif
-							ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, valuePtr, value.Length);
+                        ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, valuePtr, value.Length);
                         int gapStart = replacements[i] + removeCount;
                         i++;
                         if (i >= replacementsCount)
