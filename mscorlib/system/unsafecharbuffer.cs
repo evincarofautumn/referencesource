@@ -44,23 +44,26 @@ namespace System {
                 throw new IndexOutOfRangeException();
             }
             
-            fixed( char* pointerToString = stringToAppend ) {        
 #if MONO
+            fixed( byte* pointerToString = &stringToAppend.m_firstByte ) {
                 if (stringToAppend.IsCompact) {
                     if (m_isCompact) {
-                        Buffer.Memcpy((byte*)(m_buffer + m_length), (byte*)pointerToString, stringToAppend.Length * sizeof(byte));
+                        Buffer.Memcpy((byte*)(m_buffer + m_length), pointerToString, stringToAppend.Length * sizeof(byte));
                     } else {
                         for (int i = 0; i < stringToAppend.Length; ++i)
-                            ((char*)m_buffer)[i + m_length] = (char)((byte *)pointerToString) [i];
+                            ((char*)m_buffer)[i + m_length] = (char)pointerToString [i];
                     }
-                } else
-#endif
-                {
+                } else {
                     Contract.Assert(!m_isCompact, "Cannot fill compact buffer from non-compact strings.");
-                    Buffer.Memcpy( (byte*) (m_buffer + m_length * sizeof(char)), (byte *) pointerToString, stringToAppend.Length * sizeof(char));
+                    Buffer.Memcpy( (byte*) (m_buffer + m_length * sizeof(char)), pointerToString, stringToAppend.Length * sizeof(char));
                 }
             }
-            
+#else
+            fixed( char* pointerToString = stringToAppend ) {
+                Contract.Assert(!m_isCompact, "Cannot fill compact buffer from non-compact strings.");
+                Buffer.Memcpy( (byte*) (m_buffer + m_length * sizeof(char)), (byte *) pointerToString, stringToAppend.Length * sizeof(char));
+            }
+#endif
             m_length += stringToAppend.Length;
             Contract.Assert(m_length <= m_totalSize, "Buffer has been overflowed!");
         }
