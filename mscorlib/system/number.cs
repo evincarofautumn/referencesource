@@ -663,13 +663,16 @@ namespace System {
 
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe static char * MatchChars(char* p, string str) {
-            fixed (char* stringPointer = str) {
 #if MONO
+            fixed (byte* stringPointer = &str.m_firstByte) {
                 if (str.IsCompact)
-                    return MatchCharsCompact(p, (byte*)stringPointer);
-#endif
-                return MatchChars(p, stringPointer);
+                    return MatchCharsCompact(p, stringPointer);
+                return MatchChars(p, (char*)stringPointer);
             }
+#else
+            fixed (char* stringPointer = str)
+                return MatchChars(p, stringPointer);
+#endif
         }
 
 #if MONO
@@ -706,13 +709,16 @@ namespace System {
         }
 
         private unsafe static byte * MatchChars(byte* p, string str) {
-            fixed (char* stringPointer = str) {
 #if MONO
+            fixed (byte* stringPointer = &str.m_firstByte) {
                 if (str.IsCompact)
-                    return MatchCharsCompact(p, (byte*)stringPointer);
-#endif
-                return MatchChars(p, stringPointer);
+                    return MatchCharsCompact(p, stringPointer);
+                return MatchChars(p, (char*)stringPointer);
             }
+#else
+            fixed (char* stringPointer = str)
+                return MatchChars(p, stringPointer);
+#endif
         }
 
 #if MONO
@@ -1330,23 +1336,29 @@ namespace System {
             }
             Contract.EndContractBlock();
             Contract.Assert(info != null, "");
-            fixed (char* start = str) {
 #if MONO
+            fixed (byte* start = &str.m_firstByte) {
                 if (str.IsCompact) {
-                    byte* startByte = (byte*)start;
+                    byte* startByte = start;
                     byte* p = startByte;
                     if (!ParseNumber(ref p, options, ref number, null, info, parseDecimal)
                         || (p - startByte < str.Length && !TrailingZeros(str, (int)(p - startByte))))
                         throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
-                } else
-#endif
-                {
-                    char* p = start;
+                } else {
+                    char* p = (char*)start;
                     if (!ParseNumber(ref p, options, ref number, null, info, parseDecimal)
                         || (p - start < str.Length && !TrailingZeros(str, (int)(p - start))))
                         throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
                 }
             }
+#else
+            fixed (char* start = str) {
+                char* p = start;
+                if (!ParseNumber(ref p, options, ref number, null, info, parseDecimal)
+                    || (p - start < str.Length && !TrailingZeros(str, (int)(p - start))))
+                    throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+            }
+#endif
         }
         
         private static Boolean TrailingZeros(String s, Int32 index) {
@@ -1523,23 +1535,29 @@ namespace System {
             }
             Contract.Assert(numfmt != null, "");
 
-            fixed (char* start = str) {
 #if MONO
+            fixed (byte* start = &str.m_firstByte) {
                 if (str.IsCompact) {
-                    byte* startByte = (byte*)start;
+                    byte* startByte = start;
                     byte* p = startByte;
                     if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal)
                         || (p - startByte < str.Length && !TrailingZeros(str, (int)(p - startByte))))
                         return false;
-                } else
-#endif
-                {
-                    char* p = start;
+                } else {
+                    char* p = (char*)start;
                     if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal)
                         || (p - start < str.Length && !TrailingZeros(str, (int)(p - start))))
                         return false;
                 }
             }
+#else
+            fixed (char* start = str) {
+                char* p = start;
+                if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal)
+                    || (p - start < str.Length && !TrailingZeros(str, (int)(p - start))))
+                    return false;
+            }
+#endif
 
             return true;
         }
