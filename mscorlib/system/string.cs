@@ -842,9 +842,9 @@ namespace System {
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
 
             unsafe {
-                fixed (char *src = this) {
+                fixed (byte *src = &m_firstByte) {
                     if (IsCompact) {
-                        byte* srcByte = (byte*)src;
+                        byte* srcByte = src;
                         Contract.Assert(srcByte == null || srcByte[this.Length] == '\0', "srcByte[this.Length] == '\\0'");
                         Contract.Assert( ((int)srcByte)%4 == 0, "Managed string should start at 4 bytes boundary");
 
@@ -869,8 +869,9 @@ namespace System {
 
                         return hash1 + (hash2 * 1566083941);
                     } else {
-                        Contract.Assert(src == null || src[this.Length] == '\0', "src[this.Length] == '\\0'");
-                        Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
+                        char* srcChar = (char*)src;
+                        Contract.Assert(src == null || srcChar[this.Length] == '\0', "src[this.Length] == '\\0'");
+                        Contract.Assert( ((int)srcChar)%4 == 0, "Managed string should start at 4 bytes boundary");
 
 #if WIN32
                         int hash1 = (5381<<16) + 5381;
@@ -881,7 +882,7 @@ namespace System {
 
 #if WIN32
                         // 32 bit machines.
-                        int* pint = (int *)src;
+                        int* pint = (int *)srcChar;
                         int len = this.Length;
                         while (len > 2)
                         {
@@ -897,7 +898,7 @@ namespace System {
                         }
 #else
                         int     c;
-                        char *s = src;
+                        char *s = srcChar;
                         while ((c = s[0]) != 0) {
                             hash1 = ((hash1 << 5) + hash1) ^ c;
                             c = s[1];
@@ -927,9 +928,14 @@ namespace System {
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
 
             unsafe {
-                fixed (char *src = this) {
-                    Contract.Assert(src == null || src[this.Length] == '\0', "src[this.Length] == '\\0'");
+                fixed (byte *src = &m_firstByte) {
+                    Contract.Assert(
+                        src == null
+                        || (IsCompact ? (char)src[Length] : ((char*)src)[Length]) == '\0',
+                        "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
+
+                    /* FIXME: This breaks the invariant that equal strings hash to the same value. */
 
 #if WIN32
                     int hash1 = (5381<<16) + 5381;
@@ -989,8 +995,10 @@ namespace System {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal int GetLegacyNonRandomizedHashCode() {
             unsafe {
-                fixed (char *src = this) {
-                    Contract.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
+                fixed (byte *src = &m_firstByte) {
+                    Contract.Assert(
+                        (IsCompact ? (char)src[this.Length] : ((char*)src)[this.Length]) == '\0',
+                        "src[this.Length] == '\\0'");
                     Contract.Assert( ((int)src)%4 == 0, "Managed string should start at 4 bytes boundary");
 
 #if WIN32
