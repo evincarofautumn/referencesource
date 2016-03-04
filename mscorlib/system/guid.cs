@@ -1220,7 +1220,8 @@ namespace System {
                 /* FIXME: Use compact encoding. */
                 guidString = string.FastAllocateString(38, String.ENCODING_UTF16);
                 unsafe {
-                    fixed (char* guidChars = guidString) {
+                    fixed (byte* guidBytes = &guidString.m_firstByte) {
+                        char* guidChars = (char*)guidBytes;
                         guidChars[offset++] = '{';
                         guidChars[37] = '}';
                     }
@@ -1230,7 +1231,8 @@ namespace System {
                 /* FIXME: Use compact encoding. */
                 guidString = string.FastAllocateString(38, String.ENCODING_UTF16);
                 unsafe {
-                    fixed (char* guidChars = guidString) {
+                    fixed (byte* guidBytes = &guidString.m_firstByte) {
+                        char* guidChars = (char*)guidBytes;
                         guidChars[offset++] = '(';
                         guidChars[37] = ')';
                     }
@@ -1240,7 +1242,8 @@ namespace System {
                 /* FIXME: Use compact encoding. */
                 guidString = string.FastAllocateString(68, String.ENCODING_UTF16);
                 unsafe {
-                    fixed (char* guidChars = guidString) {
+                    fixed (byte* guidBytes = &guidString.m_firstByte) {
+                        char* guidChars = (char*)guidBytes;
                         guidChars[offset++] = '{';
                         guidChars[67] = '}';
                     }
@@ -1253,7 +1256,8 @@ namespace System {
             }
 
             unsafe {
-                fixed (char* guidChars = guidString) {
+                fixed (byte* guidBytes = &guidString.m_firstByte) {
+                    char* guidChars = (char*)guidBytes;
                     if (hex) {
                         // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
                         guidChars[offset++] = '0';
