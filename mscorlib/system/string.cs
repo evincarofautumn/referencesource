@@ -1392,7 +1392,7 @@ namespace System {
             int sepListCount = sepList.Length;
             int sepCount = separators.Length;
 
-            fixed (char* pwzChars = this) {
+            fixed (byte* pwzChars = &m_firstByte) {
                 for (int i=0; i< Length && foundCount < sepListCount; i++) {
                     for( int j =0; j < separators.Length; j++) {
                         String separator = separators[j];
@@ -1401,7 +1401,7 @@ namespace System {
                         }
                         Int32 currentSepLength = separator.Length;
                         /* FIXME: Lift IsCompact out of the loop. */
-                        if ( (IsCompact ? (char)((byte*)pwzChars)[i] : pwzChars[i]) == separator[0]
+                        if ( (IsCompact ? (char)pwzChars[i] : ((char*)pwzChars)[i]) == separator[0]
                              && currentSepLength <= Length - i) {
                             if (currentSepLength == 1
                                 || String.CompareOrdinal(this, i, separator, 0, currentSepLength) == 0) {
