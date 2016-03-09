@@ -212,6 +212,38 @@ namespace System {
         internal char FirstChar { get { return m_firstChar; } }
 #endif
 
+        public unsafe struct BytePtr {
+            private byte* p;
+            public BytePtr (IntPtr p) {
+                this.p = (byte*)p;
+            }
+            public byte* Value {
+                get { return p; }
+            }
+        }
+
+        public unsafe struct CharPtr {
+            private char* p;
+            public CharPtr (IntPtr p) {
+                this.p = (char*)p;
+            }
+            public char* Value {
+                get { return p; }
+            }
+        }
+
+        public unsafe T UnsafeApply<T> (Func<BytePtr, T> compact, Func<CharPtr, T> noncompact) {
+            fixed (byte* p = &m_firstByte) {
+                if (IsCompact) {
+                    if (compact != null)
+                        return compact (new BytePtr ((IntPtr)p));
+                } else if (noncompact != null) {
+                    return noncompact (new CharPtr ((IntPtr)p));
+                }
+                return default (T);
+            }
+        }
+
 #if !MONO
         // Joins an array of strings together as one string with a separator between each original string.
         //
