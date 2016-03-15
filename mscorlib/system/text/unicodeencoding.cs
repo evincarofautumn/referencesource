@@ -203,27 +203,33 @@ namespace System.Text
                 bytes = new byte[1];
 
             fixed (byte* pBytes = bytes)
-            fixed (char* pChars = s) {
 #if MONO
+            fixed (byte* pChars = &s.m_firstByte) {
                 if (s.IsCompact) {
                     if (bigEndian) {
                         for (int i = 0; i < charCount; ++i) {
                             pBytes[byteIndex + CharSize * i + 0] = 0;
-                            pBytes[byteIndex + CharSize * i + 1] = ((byte*)pChars)[charIndex + i];
+                            pBytes[byteIndex + CharSize * i + 1] = pChars[charIndex + i];
                         }
                     } else {
                         for (int i = 0; i < charCount; ++i) {
-                            pBytes[byteIndex + CharSize * i + 0] = ((byte*)pChars)[charIndex + i];
+                            pBytes[byteIndex + CharSize * i + 0] = pChars[charIndex + i];
                             pBytes[byteIndex + CharSize * i + 1] = 0;
                         }
                     }
                     return charCount * CharSize;
                 }
-#endif
+                return GetBytes(
+                    (char*)pChars + charIndex, charCount,
+                    pBytes + byteIndex, byteCount, null);
+            }
+#else
+            fixed (char* pChars_ = s) {
                 return GetBytes(
                     pChars + charIndex, charCount,
                     pBytes + byteIndex, byteCount, null);
             }
+#endif
         }
 
         // Encodes a range of characters in a character array into a range of bytes
