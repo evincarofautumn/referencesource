@@ -135,16 +135,20 @@ namespace System.Text
                 throw new ArgumentNullException("s");
             Contract.EndContractBlock();
 
-            fixed (char* pChars = s) {
 #if MONO
+            fixed (byte* pChars = &s.m_firstByte) {
                 /* This is safe because a compact string cannot contain invalid
                  * Unicode, so fallbacks are unnecessary.
                  */
                 if (s.IsCompact)
                     return s.Length * CharSize;
-#endif
+                return GetByteCount((char*)pChars, s.Length, null);
+            }
+#else
+            fixed (char* pChars = s) {
                 return GetByteCount(pChars, s.Length, null);
             }
+#endif
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
