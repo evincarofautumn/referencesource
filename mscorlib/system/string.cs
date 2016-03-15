@@ -244,6 +244,17 @@ namespace System {
             }
         }
 
+        public unsafe void UnsafeApply (Action<BytePtr> compact, Action<CharPtr> noncompact) {
+            fixed (byte* p = &m_firstByte) {
+                if (IsCompact) {
+                    if (compact != null)
+                        compact (new BytePtr ((IntPtr)p));
+                } else if (noncompact != null) {
+                    noncompact (new CharPtr ((IntPtr)p));
+                }
+            }
+        }
+
 #if !MONO
         // Joins an array of strings together as one string with a separator between each original string.
         //
