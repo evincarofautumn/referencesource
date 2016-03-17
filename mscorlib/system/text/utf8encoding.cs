@@ -232,7 +232,8 @@ namespace System.Text
 #if MONO
             fixed (byte* pChars = &s.m_firstByte) {
                 if (s.IsCompact) {
-                    Buffer.Memcpy(pBytes + byteIndex, pChars + charIndex, byteCount);
+                    Buffer.Memcpy(pBytes + byteIndex, pChars + charIndex,
+                                  Math.Min (byteCount, charCount));
                     return charCount;
                 }
                 return GetBytes(
